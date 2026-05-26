@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { X, Mail, ExternalLink, Globe, Sparkles, Terminal } from 'lucide-react';
+import { Mail, ExternalLink, Globe, Sparkles } from 'lucide-react';
 import { Card } from './UI';
 
 // Bulletproof custom SVG brands for maximum portability and premium branding
@@ -23,7 +23,7 @@ const LeetcodeIcon = ({ size = 20, ...props }) => (
   </svg>
 );
 
-export default function AboutMePanel({ onClose }) {
+export default function DeveloperProfilePanel({ onClose }) {
   const links = [
     {
       name: 'GitHub',

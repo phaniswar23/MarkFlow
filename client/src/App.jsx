@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, BookOpen, GraduationCap, Calculator, Award, Sparkles, RefreshCw, BarChart2, Search, Trash2, Edit3, AlertTriangle, Filter, ArrowUpDown, Terminal, MessageSquare, Download, FileText, Share2, X, ArrowLeft } from 'lucide-react';
 import { Card, SyncStatus, Badge, CardProgressRing } from './components/UI';
 import SubjectDetailsPanel from './components/SubjectDetailsPanel';
-import AboutMePanel from './components/AboutMePanel';
+import DeveloperProfilePanel from './components/DeveloperProfilePanel';
 import FeedbackModal from './components/FeedbackModal';
 import CreateSubjectModal from './components/CreateSubjectModal';
 import ConfirmationModal from './components/ConfirmationModal';
@@ -884,14 +884,14 @@ export default function App() {
       {/* Floating Action Glassmorphic Icons bottom-right */}
       <div className="fixed bottom-6 right-6 flex flex-row gap-2 z-40 items-center select-none">
         
-        {/* About Me Trigger */}
+        {/* Developer Profile Trigger */}
         <button
           onClick={() => setShowAbout(true)}
           className="h-10 px-3.5 rounded-full backdrop-blur-md bg-white/85 hover:bg-white border border-slate-200/60 hover:border-indigo-100 shadow-lg text-slate-600 hover:text-calm-indigo flex items-center gap-2 text-xs font-bold transition-all transition-grow-glow outline-none focus:ring-2 focus:ring-calm-indigo/20 active:scale-95 cursor-pointer"
-          title="About Developer"
+          title="Developer Profile"
         >
           <Terminal size={14} className="text-calm-indigo" />
-          <span>About Me</span>
+          <span>Developer Profile</span>
         </button>
 
         {/* Feedback / Bug Report Trigger */}
@@ -1096,10 +1096,10 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* About Me Drawer Panel */}
+      {/* Developer Profile Drawer Panel */}
       <AnimatePresence>
         {showAbout && (
-          <AboutMePanel onClose={() => setShowAbout(false)} />
+          <DeveloperProfilePanel onClose={() => setShowAbout(false)} />
         )}
       </AnimatePresence>
 
@@ -1142,7 +1142,7 @@ export default function App() {
           <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 font-sans group-hover:text-indigo-600">Back</span>
         </button>
 
-        {/* Highly Highlighted About Me Section Button (Featuring easy-to-understand solid human profile logo) */}
+        {/* Highly Highlighted Developer Profile Section Button (Featuring easy-to-understand solid human profile logo) */}
         <button
           onClick={() => setShowAbout(true)}
           className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-600 transition-all duration-200 cursor-pointer relative -mt-5 active:scale-95"
@@ -1150,7 +1150,7 @@ export default function App() {
           <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25 border-2 border-white hover:scale-105 active:scale-95 transition-all">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
-          <span className="text-[9px] font-extrabold uppercase tracking-wider text-indigo-600/90 mt-1 font-sans">About Me</span>
+          <span className="text-[9px] font-extrabold uppercase tracking-wider text-indigo-600/90 mt-1 font-sans">Profile</span>
         </button>
 
         {/* Feedback Section Button */}
