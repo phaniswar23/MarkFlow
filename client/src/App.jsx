@@ -478,15 +478,6 @@ export default function App() {
               </h2>
               {totalSubjectsCount > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    onClick={handleOpenCreateModal}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-soft hover:shadow-indigo-500/20 transition-all cursor-pointer outline-none focus:ring-2 focus:ring-indigo-100"
-                    title="Add new subject"
-                  >
-                    <Plus size={12} strokeWidth={3} />
-                    <span>Add Subject</span>
-                  </button>
-
                   {/* Export Dropdown Trigger */}
                   <div className="relative">
                     <button
