@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Trash2, ArrowLeft, HelpCircle, Check, AlertCircle } from 'lucide-react';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, LabelList } from 'recharts';
 import { Card, CircularProgress, Badge, ProportionalMathView } from './UI';
 import { calculateSubjectMarks, validateMarks, safeNumber } from '../utils/calcEngine';
 
@@ -403,7 +403,15 @@ export default function SubjectDetailsPanel({ subject, onClose, onSave, onDelete
                     fillOpacity={1} 
                     fill="url(#colorTrend)" 
                     activeDot={{ r: 5, stroke: '#5a67d8', strokeWidth: 2, fill: '#ffffff' }}
-                  />
+                  >
+                    <LabelList 
+                      dataKey="percentage" 
+                      position="top" 
+                      offset={10} 
+                      style={{ fill: '#4f46e5', fontSize: 10, fontWeight: 800, fontFamily: 'monospace' }}
+                      formatter={(val) => `${val}%`}
+                    />
+                  </Area>
                 </AreaChart>
               </ResponsiveContainer>
             </div>

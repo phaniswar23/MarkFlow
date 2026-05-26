@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, BookOpen, GraduationCap, Calculator, Award, Sparkles, RefreshCw, BarChart2, Search, Trash2, Edit3, AlertTriangle, Filter, ArrowUpDown, Terminal, MessageSquare, Download, FileText, Share2, X } from 'lucide-react';
+import { Plus, BookOpen, GraduationCap, Calculator, Award, Sparkles, RefreshCw, BarChart2, Search, Trash2, Edit3, AlertTriangle, Filter, ArrowUpDown, Terminal, MessageSquare, Download, FileText, Share2, X, ArrowLeft } from 'lucide-react';
 import { Card, SyncStatus, Badge, CardProgressRing } from './components/UI';
 import SubjectDetailsPanel from './components/SubjectDetailsPanel';
 import AboutMePanel from './components/AboutMePanel';
@@ -1143,7 +1143,10 @@ export default function App() {
           }}
           className="flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600 transition-all duration-200 cursor-pointer group active:scale-95 py-1 px-3 rounded-xl hover:bg-slate-50"
         >
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 font-sans group-hover:text-indigo-600">Back</span>
+          <div className="p-0.5 transition-colors">
+            <ArrowLeft size={18} className="text-slate-400 group-hover:text-indigo-600" />
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 font-sans group-hover:text-indigo-600">Back</span>
         </button>
 
         {/* Highly Highlighted About Me Section Button (Featuring easy-to-understand solid human profile logo) */}

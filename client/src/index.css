@@ -30,6 +30,7 @@
 @layer base {
   body {
     @apply bg-[#f8fafc] text-slate-800 antialiased font-sans selection:bg-slate-200;
+    overscroll-behavior: contain; /* Prevents chrome refresh-on-pull and back/forward swipe gestures */
   }
 
   input[type="number"]::-webkit-inner-spin-button,
