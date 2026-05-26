@@ -682,20 +682,6 @@ export default function App() {
         {/* Subjects & Utilities Grid */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
           
-          {/* Card: Add New Subject Action Card - Hidden on Mobile, Flex on Desktop */}
-          <button
-            onClick={handleOpenCreateModal}
-            className="hidden md:flex group min-h-[190px] bg-white border-2 border-dashed border-slate-200 hover:border-calm-indigo/40 hover:bg-indigo-50/10 rounded-2xl p-6 flex-col items-center justify-center gap-3 transition-grow-glow outline-none focus:ring-2 focus:ring-calm-indigo/20 text-center cursor-pointer select-none"
-          >
-            <div className="h-12 w-12 rounded-full bg-slate-50 group-hover:bg-indigo-50 flex items-center justify-center text-slate-400 group-hover:text-calm-indigo transition-colors shadow-soft">
-              <Plus size={22} className="group-hover:rotate-90 transition-transform duration-300" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-700 group-hover:text-calm-indigo transition-colors">Add New Subject</h3>
-              <p className="text-[11px] text-slate-400 mt-1 max-w-[200px]">Define parameters before starting assessments.</p>
-            </div>
-          </button>
-
           {/* Render Subject Cards list */}
           <AnimatePresence>
             {filteredSubjects.map(({ id, name, code, weightage, selectionLogic, assessments, metrics }) => {
