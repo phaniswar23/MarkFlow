@@ -227,8 +227,8 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
                     placeholder="e.g. MAT201 (Mandatory)"
                     value={code}
                     ref={firstInputRef}
-                    onChange={(e) => setCode(e.target.value)}
-                    className={`w-full px-3.5 py-2 text-sm bg-white border ${errors.code ? 'border-rose-300 focus:ring-rose-200' : 'border-slate-200 focus:ring-calm-indigo/20'} rounded-xl focus:ring-2 outline-none font-medium text-slate-800 transition-all`}
+                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    className={`w-full px-3.5 py-2 text-sm bg-white border uppercase ${errors.code ? 'border-rose-300 focus:ring-rose-200' : 'border-slate-200 focus:ring-calm-indigo/20'} rounded-xl focus:ring-2 outline-none font-medium text-slate-800 transition-all`}
                   />
                   {errors.code && (
                     <span className="text-[10px] text-rose-500 font-semibold mt-1 flex items-center gap-1">

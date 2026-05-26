@@ -259,8 +259,8 @@ export default function SubjectDetailsPanel({ subject, onClose, onSave, onDelete
                   type="text"
                   placeholder="e.g. MAT201"
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-calm-indigo/20 focus:border-calm-indigo outline-none transition-all font-medium text-slate-800"
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-calm-indigo/20 focus:border-calm-indigo outline-none transition-all font-medium text-slate-800 uppercase"
                 />
               </div>
 
