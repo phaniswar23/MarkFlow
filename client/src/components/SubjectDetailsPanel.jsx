@@ -5,6 +5,17 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tool
 import { Card, CircularProgress, Badge, ProportionalMathView } from './UI';
 import { calculateSubjectMarks, validateMarks, safeNumber } from '../utils/calcEngine';
 
+const toTitleCase = (str) => {
+  if (!str) return '';
+  return str
+    .split(' ')
+    .map(word => {
+      if (word.length === 0) return '';
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+};
+
 export default function SubjectDetailsPanel({ subject, onClose, onSave, onDelete }) {
   // Local state initialized from active subject
   const [name, setName] = useState(subject.name || '');
@@ -248,7 +259,7 @@ export default function SubjectDetailsPanel({ subject, onClose, onSave, onDelete
                   type="text"
                   placeholder="e.g. Mathematics"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => setName(toTitleCase(e.target.value))}
                   className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-calm-indigo/20 focus:border-calm-indigo outline-none transition-all font-medium text-slate-800"
                 />
               </div>
