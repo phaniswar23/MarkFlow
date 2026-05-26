@@ -239,6 +239,9 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
                     value={code}
                     ref={firstInputRef}
                     onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck="false"
                     className={`w-full px-3.5 py-2 text-sm bg-white border uppercase ${errors.code ? 'border-rose-300 focus:ring-rose-200' : 'border-slate-200 focus:ring-calm-indigo/20'} rounded-xl focus:ring-2 outline-none font-medium text-slate-800 transition-all`}
                   />
                   {errors.code && (
@@ -256,6 +259,9 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
                     placeholder="e.g. Mathematics"
                     value={name}
                     onChange={(e) => setName(toTitleCase(e.target.value))}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck="false"
                     className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 focus:ring-calm-indigo/20 rounded-xl focus:ring-2 outline-none font-medium text-slate-800 transition-all capitalize-first-letter"
                   />
                 </div>

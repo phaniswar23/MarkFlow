@@ -260,6 +260,9 @@ export default function SubjectDetailsPanel({ subject, onClose, onSave, onDelete
                   placeholder="e.g. Mathematics"
                   value={name}
                   onChange={(e) => setName(toTitleCase(e.target.value))}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                   className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-calm-indigo/20 focus:border-calm-indigo outline-none transition-all font-medium text-slate-800"
                 />
               </div>
@@ -271,6 +274,9 @@ export default function SubjectDetailsPanel({ subject, onClose, onSave, onDelete
                   placeholder="e.g. MAT201"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                   className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-calm-indigo/20 focus:border-calm-indigo outline-none transition-all font-medium text-slate-800 uppercase"
                 />
               </div>
