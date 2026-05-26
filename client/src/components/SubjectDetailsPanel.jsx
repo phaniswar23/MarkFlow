@@ -149,11 +149,12 @@ export default function SubjectDetailsPanel({ subject, onClose, onSave, onDelete
   // Handle marks editing with instant validation
   const handleAssessmentChange = (index, field, value) => {
     const updated = [...assessments];
+    const cleanValue = typeof value === 'string' ? value.replace(/^0+(?=\d)/, '') : value;
     
-    if (value === '') {
+    if (cleanValue === '') {
       updated[index][field] = '';
     } else {
-      updated[index][field] = value;
+      updated[index][field] = cleanValue;
     }
     
     setAssessments(updated);
@@ -536,7 +537,13 @@ export default function SubjectDetailsPanel({ subject, onClose, onSave, onDelete
                               inputMode="decimal"
                               onChange={(e) => handleAssessmentChange(index, 'obtainedMarks', e.target.value)}
                               onKeyDown={(e) => handleKeyDown(e, index, 'obt')}
-                              onFocus={(e) => e.target.select()}
+                              onFocus={(e) => {
+                                if (e.target.value === '0' || e.target.value === 0) {
+                                  handleAssessmentChange(index, 'obtainedMarks', '');
+                                } else {
+                                  e.target.select();
+                                }
+                              }}
                               className="w-14 sm:w-20 text-center px-1.5 py-1 text-xs sm:text-sm bg-slate-100 hover:bg-slate-200/50 focus:bg-white border border-slate-200 focus:border-calm-indigo focus:ring-1 focus:ring-calm-indigo/10 rounded-lg outline-none font-semibold transition-all"
                             />
                             <span className="text-slate-400 font-bold text-xs">/</span>
@@ -548,7 +555,13 @@ export default function SubjectDetailsPanel({ subject, onClose, onSave, onDelete
                               inputMode="decimal"
                               onChange={(e) => handleAssessmentChange(index, 'totalMarks', e.target.value)}
                               onKeyDown={(e) => handleKeyDown(e, index, 'tot')}
-                              onFocus={(e) => e.target.select()}
+                              onFocus={(e) => {
+                                if (e.target.value === '0' || e.target.value === 0) {
+                                  handleAssessmentChange(index, 'totalMarks', '');
+                                } else {
+                                  e.target.select();
+                                }
+                              }}
                               className="w-14 sm:w-20 text-center px-1.5 py-1 text-xs sm:text-sm bg-slate-100 hover:bg-slate-200/50 focus:bg-white border border-slate-200 focus:border-calm-indigo focus:ring-1 focus:ring-calm-indigo/10 rounded-lg outline-none font-semibold transition-all"
                             />
                           </div>

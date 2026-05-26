@@ -158,7 +158,8 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
 
   const handleAssessmentChange = (index, field, value) => {
     const updated = [...assessments];
-    updated[index][field] = value === '' ? '' : value;
+    const cleanValue = typeof value === 'string' ? value.replace(/^0+(?=\d)/, '') : value;
+    updated[index][field] = cleanValue === '' ? '' : cleanValue;
     setAssessments(updated);
   };
 
@@ -356,7 +357,13 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
                               value={ass.obtainedMarks}
                               inputMode="decimal"
                               onChange={(e) => handleAssessmentChange(index, 'obtainedMarks', e.target.value)}
-                              onFocus={(e) => e.target.select()}
+                              onFocus={(e) => {
+                                if (e.target.value === '0' || e.target.value === 0) {
+                                  handleAssessmentChange(index, 'obtainedMarks', '');
+                                } else {
+                                  e.target.select();
+                                }
+                              }}
                               className="w-16 text-center px-1.5 py-1 text-xs bg-white border border-slate-200 rounded-md outline-none font-bold focus:border-calm-indigo focus:ring-1 focus:ring-calm-indigo/20"
                             />
                             <span className="text-slate-400 font-bold">/</span>
@@ -366,7 +373,13 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
                               value={ass.totalMarks}
                               inputMode="decimal"
                               onChange={(e) => handleAssessmentChange(index, 'totalMarks', e.target.value)}
-                              onFocus={(e) => e.target.select()}
+                              onFocus={(e) => {
+                                if (e.target.value === '0' || e.target.value === 0) {
+                                  handleAssessmentChange(index, 'totalMarks', '');
+                                } else {
+                                  e.target.select();
+                                }
+                              }}
                               className="w-16 text-center px-1.5 py-1 text-xs bg-white border border-slate-200 rounded-md outline-none font-bold focus:border-calm-indigo focus:ring-1 focus:ring-calm-indigo/20"
                             />
                           </div>
