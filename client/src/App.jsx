@@ -624,8 +624,8 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Filters and Search Row (SaaS Style) */}
-        <div className="bg-white border border-slate-100 p-4 rounded-2xl shadow-soft flex flex-col md:flex-row md:items-center justify-between gap-4 select-none">
+        {/* Filters and Search Row (SaaS Style) - Hidden on Mobile, Flex on Desktop */}
+        <div className="hidden md:flex bg-white border border-slate-100 p-4 rounded-2xl shadow-soft flex-col md:flex-row md:items-center justify-between gap-4 select-none">
           {/* Search bar */}
           <div className="relative flex-1 max-w-md">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -682,10 +682,10 @@ export default function App() {
         {/* Subjects & Utilities Grid */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
           
-          {/* Card: Add New Subject Action Card */}
+          {/* Card: Add New Subject Action Card - Hidden on Mobile, Flex on Desktop */}
           <button
             onClick={handleOpenCreateModal}
-            className="group min-h-[190px] bg-white border-2 border-dashed border-slate-200 hover:border-calm-indigo/40 hover:bg-indigo-50/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 transition-grow-glow outline-none focus:ring-2 focus:ring-calm-indigo/20 text-center cursor-pointer select-none"
+            className="hidden md:flex group min-h-[190px] bg-white border-2 border-dashed border-slate-200 hover:border-calm-indigo/40 hover:bg-indigo-50/10 rounded-2xl p-6 flex-col items-center justify-center gap-3 transition-grow-glow outline-none focus:ring-2 focus:ring-calm-indigo/20 text-center cursor-pointer select-none"
           >
             <div className="h-12 w-12 rounded-full bg-slate-50 group-hover:bg-indigo-50 flex items-center justify-center text-slate-400 group-hover:text-calm-indigo transition-colors shadow-soft">
               <Plus size={22} className="group-hover:rotate-90 transition-transform duration-300" />
