@@ -138,9 +138,6 @@ export default function AboutMePanel({ onClose }) {
                   <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100/50 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                     Full Stack
                   </span>
-                  <span className="text-[8px] font-black text-amber-600 bg-amber-50 border border-amber-100/50 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    Student Builder
-                  </span>
                 </div>
               </Card>
             </motion.div>
