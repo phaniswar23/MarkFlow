@@ -92,18 +92,22 @@ export default function App() {
     setShowCreateModal(true);
   };
 
-  // Keyboard Shortcut: Ctrl + S or Cmd + S to open the Create Subject Modal
+  // Keyboard Shortcut: Ctrl + S, Cmd + S, Alt/Option + S, or Cmd + Shift + S to open the Create Subject Modal
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Check for Ctrl/Cmd + S using code or key string
-      if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyS' || e.key.toLowerCase() === 's')) {
+      const isSKey = e.key === 's' || e.key === 'S' || e.code === 'KeyS';
+      const hasModifier = e.ctrlKey || e.metaKey || e.altKey;
+
+      if (hasModifier && isSKey) {
+        // Prevent browser save dialog or option insertions
         e.preventDefault();
         e.stopPropagation();
+        console.log('MarkFlow: Subject Creation Shortcut triggered successfully.');
         handleOpenCreateModal();
       }
     };
 
-    // Use capturing phase (true) to intercept the keyboard event before the browser handles it
+    // Listen on capture phase to beat native OS browser shortcuts
     window.addEventListener('keydown', handleKeyDown, true);
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
