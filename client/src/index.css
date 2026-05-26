@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #f8fafc;
+  --color-brand-100: #f1f5f9;
+  --color-brand-200: #e2e8f0;
+  --color-brand-300: #cbd5e1;
+  --color-brand-400: #94a3b8;
+  --color-brand-500: #64748b;
+  --color-brand-600: #475569;
+  --color-brand-700: #334155;
+  --color-brand-800: #1e293b;
+  --color-brand-900: #0f172a;
+  
+  --color-calm-indigo: #5a67d8;
+  --color-calm-blue: #4a90e2;
+  --color-calm-teal: #4fd1c5;
+  --color-calm-sage: #8fbc8f;
+  --color-calm-rose: #e57373;
+  --color-calm-lavender: #805ad5;
+
+  --font-sans: "Plus Jakarta Sans", "Inter", "system-ui", "sans-serif";
+
+  --shadow-soft: 0 2px 12px 0 rgba(0, 0, 0, 0.03), 0 4px 24px 0 rgba(0, 0, 0, 0.02);
+  --shadow-soft-glow: 0 4px 20px 0 rgba(90, 103, 216, 0.08), 0 0 15px 0 rgba(90, 103, 216, 0.04);
+  --shadow-soft-glow-teal: 0 4px 20px 0 rgba(79, 209, 197, 0.1), 0 0 15px 0 rgba(79, 209, 197, 0.05);
+  --shadow-soft-glow-rose: 0 4px 20px 0 rgba(229, 115, 115, 0.08), 0 0 15px 0 rgba(229, 115, 115, 0.04);
+}
+
+@layer base {
+  body {
+    @apply bg-[#f8fafc] text-slate-800 antialiased font-sans selection:bg-slate-200;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+/* Smooth custom physics-like transitions for calculations and visual states */
+.transition-grow-glow {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Chrome/Safari custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
