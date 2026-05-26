@@ -265,6 +265,7 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
                     max="100"
                     inputMode="numeric"
                     onChange={(e) => setWeightage(e.target.value)}
+                    onFocus={(e) => e.target.select()}
                     className={`w-full px-3.5 py-2 text-sm bg-white border ${errors.weightage ? 'border-rose-300 focus:ring-rose-200' : 'border-slate-200 focus:ring-calm-indigo/20'} rounded-xl focus:ring-2 outline-none font-medium text-slate-800 transition-all`}
                   />
                   {errors.weightage && (
@@ -355,6 +356,7 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
                               value={ass.obtainedMarks}
                               inputMode="decimal"
                               onChange={(e) => handleAssessmentChange(index, 'obtainedMarks', e.target.value)}
+                              onFocus={(e) => e.target.select()}
                               className="w-16 text-center px-1.5 py-1 text-xs bg-white border border-slate-200 rounded-md outline-none font-bold focus:border-calm-indigo focus:ring-1 focus:ring-calm-indigo/20"
                             />
                             <span className="text-slate-400 font-bold">/</span>
@@ -364,6 +366,7 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
                               value={ass.totalMarks}
                               inputMode="decimal"
                               onChange={(e) => handleAssessmentChange(index, 'totalMarks', e.target.value)}
+                              onFocus={(e) => e.target.select()}
                               className="w-16 text-center px-1.5 py-1 text-xs bg-white border border-slate-200 rounded-md outline-none font-bold focus:border-calm-indigo focus:ring-1 focus:ring-calm-indigo/20"
                             />
                           </div>

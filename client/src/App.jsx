@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, BookOpen, GraduationCap, Calculator, Award, Sparkles, RefreshCw, BarChart2, Search, Trash2, Edit3, AlertTriangle, Filter, ArrowUpDown, Terminal, MessageSquare, Download, FileText, Share2, X, ArrowLeft } from 'lucide-react';
+import { Plus, BookOpen, GraduationCap, Calculator, Award, Sparkles, RefreshCw, BarChart2, Search, Trash2, Edit3, AlertTriangle, Filter, ArrowUpDown, Terminal, MessageSquare, Download, FileText, Share2, X, ArrowLeft, User } from 'lucide-react';
 import { Card, SyncStatus, Badge, CardProgressRing } from './components/UI';
 import SubjectDetailsPanel from './components/SubjectDetailsPanel';
 import DeveloperProfilePanel from './components/DeveloperProfilePanel';
@@ -47,6 +47,26 @@ export default function App() {
 
   // Toast Notification states
   const [toasts, setToasts] = useState([]);
+
+  // Mobile FAB Tooltip state & timer
+  const [showTooltip, setShowTooltip] = useState(false);
+  useEffect(() => {
+    // Show tooltip initially after 2 seconds
+    const initialTimeout = setTimeout(() => {
+      setShowTooltip(true);
+      setTimeout(() => setShowTooltip(false), 2000);
+    }, 2000);
+
+    const interval = setInterval(() => {
+      setShowTooltip(true);
+      setTimeout(() => setShowTooltip(false), 2000);
+    }, 5000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
+  }, []);
 
   const addToast = (message, type = 'error') => {
     const id = Date.now().toString() + Math.random().toString();
@@ -1105,15 +1125,31 @@ export default function App() {
 
       {/* Floating Action Button (FAB) for mobile viewports */}
       <div className="fixed bottom-24 right-6 z-40 md:hidden select-none">
+        <AnimatePresence>
+          {showTooltip && (
+            <motion.div
+              initial={{ opacity: 0, y: 15, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.8 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="absolute bottom-16 right-0 bg-indigo-600 text-white text-[10px] font-black py-1.5 px-3 rounded-xl shadow-lg shadow-indigo-500/25 whitespace-nowrap border border-indigo-400/30 flex items-center gap-1"
+            >
+              <Terminal size={10} className="animate-pulse" />
+              <span>Developer Profile</span>
+              {/* Tooltip little arrow */}
+              <div className="absolute right-5 -bottom-1 w-2.5 h-2.5 bg-indigo-600 rotate-45 border-r border-b border-indigo-400/30" />
+            </motion.div>
+          )}
+        </AnimatePresence>
         <motion.button
-          onClick={handleOpenCreateModal}
+          onClick={() => setShowAbout(true)}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="h-12 w-12 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white flex items-center justify-center shadow-xl hover:shadow-indigo-500/30 transition-all border border-indigo-400/20 active:scale-95 cursor-pointer outline-none focus:ring-2 focus:ring-indigo-300 p-0"
-          title="Add New Subject"
+          className="h-12 w-12 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white flex items-center justify-center shadow-xl hover:shadow-indigo-500/30 transition-all border border-indigo-400/20 active:scale-95 cursor-pointer outline-none focus:ring-2 focus:ring-indigo-300 p-0 animate-none"
+          title="Developer Profile"
         >
           <div className="flex items-center justify-center h-full w-full">
-            <Plus size={22} className="shrink-0" />
+            <User size={22} className="shrink-0 stroke-[2.5]" />
           </div>
         </motion.button>
       </div>
@@ -1142,15 +1178,15 @@ export default function App() {
           <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 font-sans group-hover:text-indigo-600">Back</span>
         </button>
 
-        {/* Highly Highlighted Developer Profile Section Button (Featuring easy-to-understand solid human profile logo) */}
+        {/* Highly Highlighted Add Subject Section Button in the Middle */}
         <button
-          onClick={() => setShowAbout(true)}
+          onClick={handleOpenCreateModal}
           className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-600 transition-all duration-200 cursor-pointer relative -mt-5 active:scale-95"
         >
           <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25 border-2 border-white hover:scale-105 active:scale-95 transition-all">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <Plus size={24} className="shrink-0 stroke-[3]" />
           </div>
-          <span className="text-[9px] font-extrabold uppercase tracking-wider text-indigo-600/90 mt-1 font-sans">Profile</span>
+          <span className="text-[9px] font-extrabold uppercase tracking-wider text-indigo-600/90 mt-1 font-sans">Add Subject</span>
         </button>
 
         {/* Feedback Section Button */}

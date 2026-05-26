@@ -277,6 +277,7 @@ export default function SubjectDetailsPanel({ subject, onClose, onSave, onDelete
                       setWeightage(val);
                     }
                   }}
+                  onFocus={(e) => e.target.select()}
                   className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-calm-indigo/20 focus:border-calm-indigo outline-none transition-all font-medium text-slate-800"
                 />
               </div>
@@ -535,6 +536,7 @@ export default function SubjectDetailsPanel({ subject, onClose, onSave, onDelete
                               inputMode="decimal"
                               onChange={(e) => handleAssessmentChange(index, 'obtainedMarks', e.target.value)}
                               onKeyDown={(e) => handleKeyDown(e, index, 'obt')}
+                              onFocus={(e) => e.target.select()}
                               className="w-14 sm:w-20 text-center px-1.5 py-1 text-xs sm:text-sm bg-slate-100 hover:bg-slate-200/50 focus:bg-white border border-slate-200 focus:border-calm-indigo focus:ring-1 focus:ring-calm-indigo/10 rounded-lg outline-none font-semibold transition-all"
                             />
                             <span className="text-slate-400 font-bold text-xs">/</span>
@@ -546,6 +548,7 @@ export default function SubjectDetailsPanel({ subject, onClose, onSave, onDelete
                               inputMode="decimal"
                               onChange={(e) => handleAssessmentChange(index, 'totalMarks', e.target.value)}
                               onKeyDown={(e) => handleKeyDown(e, index, 'tot')}
+                              onFocus={(e) => e.target.select()}
                               className="w-14 sm:w-20 text-center px-1.5 py-1 text-xs sm:text-sm bg-slate-100 hover:bg-slate-200/50 focus:bg-white border border-slate-200 focus:border-calm-indigo focus:ring-1 focus:ring-calm-indigo/10 rounded-lg outline-none font-semibold transition-all"
                             />
                           </div>
