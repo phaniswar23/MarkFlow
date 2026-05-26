@@ -95,15 +95,18 @@ export default function App() {
   // Keyboard Shortcut: Ctrl + S or Cmd + S to open the Create Subject Modal
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      // Check for Ctrl/Cmd + S using code or key string
+      if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyS' || e.key.toLowerCase() === 's')) {
         e.preventDefault();
+        e.stopPropagation();
         handleOpenCreateModal();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    // Use capturing phase (true) to intercept the keyboard event before the browser handles it
+    window.addEventListener('keydown', handleKeyDown, true);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, true);
     };
   }, []);
 
