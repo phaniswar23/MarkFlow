@@ -161,6 +161,17 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
     const cleanValue = typeof value === 'string' ? value.replace(/^0+(?=\d)/, '') : value;
     updated[index][field] = cleanValue === '' ? '' : cleanValue;
     setAssessments(updated);
+
+    // Instant validation
+    const item = updated[index];
+    const validation = validateMarks(item.obtainedMarks, item.totalMarks);
+    const newErrors = { ...errors };
+    if (!validation.valid && item.obtainedMarks !== '') {
+      newErrors[`obt-${index}`] = validation.error;
+    } else {
+      delete newErrors[`obt-${index}`];
+    }
+    setErrors(newErrors);
   };
 
   return (
@@ -364,7 +375,7 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
                                   e.target.select();
                                 }
                               }}
-                              className="w-16 text-center px-1.5 py-1 text-xs bg-white border border-slate-200 rounded-md outline-none font-bold focus:border-calm-indigo focus:ring-1 focus:ring-calm-indigo/20"
+                              className={`w-16 text-center px-1.5 py-1 text-xs rounded-md outline-none font-bold transition-all border ${errors[`obt-${index}`] ? 'border-rose-300 bg-rose-50/35 text-rose-600 focus:ring-2 focus:ring-rose-200' : 'bg-white border-slate-200 focus:border-calm-indigo focus:ring-1 focus:ring-calm-indigo/20'}`}
                             />
                             <span className="text-slate-400 font-bold">/</span>
                             <input

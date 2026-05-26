@@ -544,7 +544,7 @@ export default function SubjectDetailsPanel({ subject, onClose, onSave, onDelete
                                   e.target.select();
                                 }
                               }}
-                              className="w-14 sm:w-20 text-center px-1.5 py-1 text-xs sm:text-sm bg-slate-100 hover:bg-slate-200/50 focus:bg-white border border-slate-200 focus:border-calm-indigo focus:ring-1 focus:ring-calm-indigo/10 rounded-lg outline-none font-semibold transition-all"
+                              className={`w-14 sm:w-20 text-center px-1.5 py-1 text-xs sm:text-sm rounded-lg outline-none font-semibold transition-all border ${errors[`obtainedMarks-${index}`] ? 'border-rose-300 bg-rose-50/35 text-rose-600 focus:ring-2 focus:ring-rose-200' : 'bg-slate-100 hover:bg-slate-200/50 focus:bg-white border-slate-200 focus:border-calm-indigo focus:ring-1 focus:ring-calm-indigo/10'}`}
                             />
                             <span className="text-slate-400 font-bold text-xs">/</span>
                             <input
