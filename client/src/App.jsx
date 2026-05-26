@@ -92,6 +92,21 @@ export default function App() {
     setShowCreateModal(true);
   };
 
+  // Keyboard Shortcut: Ctrl + S or Cmd + S to open the Create Subject Modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        handleOpenCreateModal();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   // 1. Initial Load: Check MongoDB status and sync subjects
   useEffect(() => {
     const initData = async () => {
