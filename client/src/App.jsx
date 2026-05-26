@@ -1111,15 +1111,17 @@ export default function App() {
       </AnimatePresence>
 
       {/* Floating Action Button (FAB) for mobile viewports */}
-      <div className="fixed bottom-20 right-6 z-40 md:hidden select-none">
+      <div className="fixed bottom-24 right-6 z-40 md:hidden select-none">
         <motion.button
           onClick={handleOpenCreateModal}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="h-14 w-14 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white flex items-center justify-center shadow-xl hover:shadow-indigo-500/30 transition-all border border-indigo-400/20 active:scale-95 cursor-pointer outline-none focus:ring-2 focus:ring-indigo-300"
+          className="h-12 w-12 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white flex items-center justify-center shadow-xl hover:shadow-indigo-500/30 transition-all border border-indigo-400/20 active:scale-95 cursor-pointer outline-none focus:ring-2 focus:ring-indigo-300 p-0"
           title="Add New Subject"
         >
-          <Plus size={26} />
+          <div className="flex items-center justify-center h-full w-full">
+            <Plus size={22} className="shrink-0" />
+          </div>
         </motion.button>
       </div>
 
@@ -1139,21 +1141,18 @@ export default function App() {
               addToast('Already on Dashboard', 'success');
             }
           }}
-          className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-indigo-600 transition-all duration-200 cursor-pointer group active:scale-95"
+          className="flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600 transition-all duration-200 cursor-pointer group active:scale-95 py-1 px-3 rounded-xl hover:bg-slate-50"
         >
-          <div className="p-1 group-hover:bg-indigo-50/50 rounded-xl transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-          </div>
-          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 font-sans">Back</span>
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 font-sans group-hover:text-indigo-600">Back</span>
         </button>
 
-        {/* Highly Highlighted About Me Section Button */}
+        {/* Highly Highlighted About Me Section Button (Featuring easy-to-understand solid human profile logo) */}
         <button
           onClick={() => setShowAbout(true)}
-          className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-600 transition-all duration-200 cursor-pointer relative -mt-4 active:scale-95"
+          className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-600 transition-all duration-200 cursor-pointer relative -mt-5 active:scale-95"
         >
-          <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25 border-2 border-white hover:scale-105 active:scale-95 transition-all">
-            <Terminal size={20} className="animate-pulse" />
+          <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25 border-2 border-white hover:scale-105 active:scale-95 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
           <span className="text-[9px] font-extrabold uppercase tracking-wider text-indigo-600/90 mt-1 font-sans">About Me</span>
         </button>
@@ -1161,12 +1160,12 @@ export default function App() {
         {/* Feedback Section Button */}
         <button
           onClick={() => setShowFeedback(true)}
-          className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-indigo-600 transition-all duration-200 cursor-pointer group active:scale-95"
+          className="flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600 transition-all duration-200 cursor-pointer group active:scale-95 py-1 px-3 rounded-xl hover:bg-slate-50"
         >
-          <div className="p-1 group-hover:bg-indigo-50/50 rounded-xl transition-colors">
-            <MessageSquare size={20} />
+          <div className="p-0.5 transition-colors">
+            <MessageSquare size={18} />
           </div>
-          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 font-sans">Feedback</span>
+          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 font-sans group-hover:text-indigo-600">Feedback</span>
         </button>
 
       </div>

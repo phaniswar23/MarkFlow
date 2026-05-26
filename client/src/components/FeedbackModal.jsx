@@ -67,10 +67,17 @@ export default function FeedbackModal({ onClose }) {
       setTimeout(() => {
         onClose();
       }, 2500);
-    } finally {
-      setSubmitting(false);
+    setSubmitting(false);
     }
   };
+
+  // Prevent background scroll when modal is active
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4">
@@ -135,6 +142,7 @@ export default function FeedbackModal({ onClose }) {
                       type="text"
                       placeholder="e.g. Phaniswar"
                       value={name}
+                      autoFocus
                       onChange={(e) => setName(e.target.value)}
                       className={`w-full px-3.5 py-2 text-sm bg-white border ${errors.name ? 'border-rose-300 focus:ring-rose-200' : 'border-slate-200 focus:ring-calm-indigo/20'} rounded-xl focus:ring-2 outline-none font-medium text-slate-800 transition-all`}
                     />

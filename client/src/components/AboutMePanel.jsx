@@ -77,16 +77,16 @@ export default function AboutMePanel({ onClose }) {
         className="relative w-full max-w-md bg-[#f8fafc] h-full shadow-2xl flex flex-col z-10 overflow-hidden border-l border-slate-100"
       >
         {/* Panel Header */}
-        <div className="p-5 bg-white border-b border-slate-100 flex items-center justify-between select-none">
-          <div className="flex items-center gap-2.5 text-slate-700">
-            <Terminal size={15} className="text-calm-indigo" />
-            <span className="text-xs font-bold uppercase tracking-wider">Developer Profile</span>
+        <div className="p-4 bg-white border-b border-slate-100/80 flex items-center justify-between select-none">
+          <div className="flex items-center gap-2 text-slate-700">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span className="text-xs font-black uppercase tracking-wider text-slate-600">Developer Profile</span>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-xl transition-all outline-none"
+            className="px-3.5 py-1.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-indigo-600 text-xs font-black uppercase tracking-wider rounded-xl transition-all outline-none cursor-pointer"
           >
-            <X size={18} />
+            Back
           </button>
         </div>
 
