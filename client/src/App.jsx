@@ -856,6 +856,10 @@ export default function App() {
             <div className="space-y-2">
               <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider">Disclaimer & Usage Agreement</h4>
               
+              <p className="text-[11px] text-slate-500 leading-relaxed font-bold text-indigo-700">
+                🔒 Privacy Promise: MarkFlow is committed to student data privacy. We do not collect, store, or share any type of personal information or academic data. All calculations and assessment logs stay entirely within your private browser storage.
+              </p>
+              
               <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
                 MarkFlow is an independently developed academic utility designed to help students estimate their Class Assessment (CA) marks and understand their performance ahead of end-semester examinations.
               </p>
@@ -960,6 +964,9 @@ export default function App() {
               <div className="space-y-3.5 text-xs text-slate-500 font-medium leading-relaxed max-h-60 overflow-y-auto pr-1">
                 <p>
                   MarkFlow is an independent academic tool built solely to help students calculate, track, and forecast their Continuous Assessment (CA) standings.
+                </p>
+                <p className="bg-emerald-50 border border-emerald-100 p-2.5 rounded-xl text-emerald-800 text-[11px] font-bold">
+                  🔒 Privacy First: This application does not collect, record, or track any type of personal or academic data. All of your subject records are stored safely, privately, and entirely on your local device.
                 </p>
                 <p>
                   All estimations are made proportionally based on standard rules. Results are estimates only and should be verified against your official university or college academic portal. Official college records will be considered final.
