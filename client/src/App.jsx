@@ -1124,22 +1124,51 @@ export default function App() {
       </div>
 
       {/* Bottom Navigation for mobile viewports */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 backdrop-blur-md border-t border-slate-100 py-2.5 px-6 flex items-center justify-around shadow-2xl rounded-t-2xl select-none">
-        {[
-          { id: 'dashboard', label: 'Dashboard', icon: <BookOpen size={18} /> },
-          { id: 'subjects', label: 'Subjects', icon: <GraduationCap size={18} /> },
-          { id: 'analytics', label: 'Analytics', icon: <BarChart2 size={18} /> },
-          { id: 'settings', label: 'Settings', icon: <Terminal size={18} /> }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => addToast(`${tab.label} tab is coming soon! Currently, semesters are loaded inline for full focus.`, 'success')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-calm-indigo transition-colors"
-          >
-            {tab.icon}
-            <span className="text-[9px] font-bold uppercase tracking-wider">{tab.label}</span>
-          </button>
-        ))}
+      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/90 backdrop-blur-lg border-t border-slate-100/80 py-3.5 px-8 flex items-center justify-between shadow-[0_-8px_30px_rgb(0,0,0,0.06)] rounded-t-3xl select-none">
+        
+        {/* Dynamic Back / Reset Button */}
+        <button
+          onClick={() => {
+            if (activeSubject) {
+              setActiveSubject(null);
+            } else if (searchQuery || performanceFilter !== 'all') {
+              setSearchQuery('');
+              setPerformanceFilter('all');
+              addToast('Filters reset to default', 'success');
+            } else {
+              addToast('Already on Dashboard', 'success');
+            }
+          }}
+          className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-indigo-600 transition-all duration-200 cursor-pointer group active:scale-95"
+        >
+          <div className="p-1 group-hover:bg-indigo-50/50 rounded-xl transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 font-sans">Back</span>
+        </button>
+
+        {/* Highly Highlighted About Me Section Button */}
+        <button
+          onClick={() => setShowAbout(true)}
+          className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-600 transition-all duration-200 cursor-pointer relative -mt-4 active:scale-95"
+        >
+          <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25 border-2 border-white hover:scale-105 active:scale-95 transition-all">
+            <Terminal size={20} className="animate-pulse" />
+          </div>
+          <span className="text-[9px] font-extrabold uppercase tracking-wider text-indigo-600/90 mt-1 font-sans">About Me</span>
+        </button>
+
+        {/* Feedback Section Button */}
+        <button
+          onClick={() => setShowFeedback(true)}
+          className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-indigo-600 transition-all duration-200 cursor-pointer group active:scale-95"
+        >
+          <div className="p-1 group-hover:bg-indigo-50/50 rounded-xl transition-colors">
+            <MessageSquare size={20} />
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 font-sans">Feedback</span>
+        </button>
+
       </div>
 
       {/* Feedback Modal Overlay */}
