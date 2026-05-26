@@ -857,7 +857,7 @@ export default function App() {
               <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider">Disclaimer & Usage Agreement</h4>
               
               <p className="text-[11px] text-slate-500 leading-relaxed font-bold text-indigo-700">
-                🔒 Privacy Promise: MarkFlow is committed to student data privacy. We do not collect, store, or share any type of personal information or academic data. All calculations and assessment logs stay entirely within your private browser storage.
+                🔒 Privacy Promise: MarkFlow is committed to student data privacy. I do not collect, store, or share any type of personal information or academic data. All calculations and assessment logs stay entirely within your private browser storage.
               </p>
               
               <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
