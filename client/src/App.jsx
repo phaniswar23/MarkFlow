@@ -478,6 +478,15 @@ export default function App() {
               </h2>
               {totalSubjectsCount > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={handleOpenCreateModal}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-soft hover:shadow-indigo-500/20 transition-all cursor-pointer outline-none focus:ring-2 focus:ring-indigo-100"
+                    title="Add new subject"
+                  >
+                    <Plus size={12} strokeWidth={3} />
+                    <span>Add Subject</span>
+                  </button>
+
                   {/* Export Dropdown Trigger */}
                   <div className="relative">
                     <button
@@ -860,6 +869,25 @@ export default function App() {
             })}
           </AnimatePresence>
 
+          {/* Add Subject Dotted Card placeholder inside the grid */}
+          {totalSubjectsCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card
+                onClick={handleOpenCreateModal}
+                className="flex flex-col items-center justify-center min-h-[190px] cursor-pointer border-2 border-dashed border-slate-200 hover:border-indigo-400/50 hover:bg-indigo-50/10 text-slate-400 hover:text-calm-indigo transition-all duration-300 rounded-2xl p-5 select-none text-center bg-transparent group h-full shadow-none hover:shadow-soft-sm"
+              >
+                <div className="h-12 w-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:border-indigo-100 group-hover:text-calm-indigo mb-3 shadow-soft-sm transition-all">
+                  <Plus size={20} strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
+                </div>
+                <span className="text-xs font-black uppercase tracking-wider text-slate-500 group-hover:text-calm-indigo">Add Subject</span>
+                <span className="text-[10px] text-slate-400/80 mt-1 max-w-[150px] font-medium leading-relaxed">Log new subject details & assessment marks</span>
+              </Card>
+            </motion.div>
+          )}
 
         </section>
 
