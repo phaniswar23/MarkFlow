@@ -6,13 +6,16 @@ import { X, AlertCircle, CheckCircle2 } from 'lucide-react';
  * Modern individual Toast Notification component with clean styles and icons
  */
 export const Toast = ({ id, message, type = 'error', onClose }) => {
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      onClose(id);
-    }, 3200);
+      onCloseRef.current(id);
+    }, 4000);
 
     return () => clearTimeout(timer);
-  }, [id, onClose]);
+  }, [id]);
 
   const styles = {
     error: {
@@ -24,6 +27,11 @@ export const Toast = ({ id, message, type = 'error', onClose }) => {
       bg: 'bg-white border-teal-100 shadow-soft-glow-teal',
       icon: <CheckCircle2 className="text-calm-teal" size={16} />,
       label: 'Success'
+    },
+    info: {
+      bg: 'bg-white border-indigo-100 shadow-soft-glow-indigo',
+      icon: <AlertCircle className="text-indigo-500" size={16} />,
+      label: 'Info'
     }
   };
 

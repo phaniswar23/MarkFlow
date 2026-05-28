@@ -29,6 +29,18 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
   const [customBestOfX, setCustomBestOfX] = useState(2);
   const [customBestOfY, setCustomBestOfY] = useState(2);
 
+  // New academic detail states
+  const [credits, setCredits] = useState(3);
+  const [attendance, setAttendance] = useState(100);
+  const [midtermApplicable, setMidtermApplicable] = useState(false);
+  const [midtermObtained, setMidtermObtained] = useState(0);
+  const [midtermTotal, setMidtermTotal] = useState(30);
+  const [midtermWeightage, setMidtermWeightage] = useState(20);
+  const [endSemObtained, setEndSemObtained] = useState(0);
+  const [endSemTotal, setEndSemTotal] = useState(100);
+  const [endSemWeightage, setEndSemWeightage] = useState(50);
+  const [showOptionalDetails, setShowOptionalDetails] = useState(false);
+
   const firstInputRef = useRef(null);
 
   // Focus on code input on open (code is now the primary mandatory field)
@@ -148,7 +160,16 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
         ...a,
         obtainedMarks: a.obtainedMarks === '' ? 0 : parseFloat(a.obtainedMarks) || 0,
         totalMarks: parseFloat(a.totalMarks) || 30
-      }))
+      })),
+      credits: parseFloat(credits) || 3,
+      attendance: parseFloat(attendance) || 100,
+      midtermApplicable,
+      midtermObtained: parseFloat(midtermObtained) || 0,
+      midtermTotal: parseFloat(midtermTotal) || 30,
+      midtermWeightage: parseFloat(midtermWeightage) || 20,
+      endSemObtained: parseFloat(endSemObtained) || 0,
+      endSemTotal: parseFloat(endSemTotal) || 100,
+      endSemWeightage: parseFloat(endSemWeightage) || 50
     });
 
     // Reset Form states
@@ -163,6 +184,16 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
       { name: 'CA1', obtainedMarks: 0, totalMarks: 30 },
       { name: 'CA2', obtainedMarks: 0, totalMarks: 30 }
     ]);
+    setCredits(3);
+    setAttendance(100);
+    setMidtermApplicable(false);
+    setMidtermObtained(0);
+    setMidtermTotal(30);
+    setMidtermWeightage(20);
+    setEndSemObtained(0);
+    setEndSemTotal(100);
+    setEndSemWeightage(50);
+    setShowOptionalDetails(false);
     setErrors({});
     onClose();
   };
@@ -362,6 +393,145 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
                   </div>
                 ) : (
                   <div className="hidden sm:block" />
+                )}
+              </div>
+
+              {/* Collapsible Additional Details Section */}
+              <div className="border border-slate-100 rounded-xl bg-white p-3.5 shadow-soft-sm space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setShowOptionalDetails(!showOptionalDetails)}
+                  className="w-full flex items-center justify-between text-left text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+                >
+                  <span>{showOptionalDetails ? 'Hide Academic Parameters (Credits, Attendance, Exams)' : 'Show Additional Parameters (Credits, Attendance, Exams)...'}</span>
+                  <span>{showOptionalDetails ? '−' : '+'}</span>
+                </button>
+
+                {showOptionalDetails && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-4 pt-2 border-t border-slate-100"
+                  >
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Credits Mapping</label>
+                        <select
+                          value={credits}
+                          onChange={(e) => setCredits(parseInt(e.target.value) || 3)}
+                          className="w-full text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none cursor-pointer"
+                        >
+                          <option value="1">1 Credit</option>
+                          <option value="2">2 Credits</option>
+                          <option value="3">3 Credits</option>
+                          <option value="4">4 Credits</option>
+                          <option value="5">5 Credits</option>
+                          <option value="6">6 Credits</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Attendance Percentage (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={attendance}
+                          onChange={(e) => setAttendance(parseFloat(e.target.value) || 0)}
+                          className="w-full text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Midterm and Endterm Parameters */}
+                    <div className="space-y-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="modalMidtermApplicable"
+                          checked={midtermApplicable}
+                          onChange={(e) => setMidtermApplicable(e.target.checked)}
+                          className="rounded text-indigo-600 focus:ring-indigo-500/25 h-3.5 w-3.5"
+                        />
+                        <label htmlFor="modalMidtermApplicable" className="text-[10px] font-bold text-slate-600 cursor-pointer">Enable Midterm Exam</label>
+                      </div>
+
+                      {midtermApplicable && (
+                        <div className="grid grid-cols-3 gap-2.5 pt-1">
+                          <div>
+                            <label className="block text-[8px] font-bold text-slate-400 uppercase">Obtained</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max={midtermTotal}
+                              value={midtermObtained}
+                              onChange={(e) => setMidtermObtained(parseFloat(e.target.value) || 0)}
+                              className="w-full text-center px-1.5 py-1 text-xs bg-white border border-slate-200 rounded-md font-bold text-slate-700 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8px] font-bold text-slate-400 uppercase">Total Max</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={midtermTotal}
+                              onChange={(e) => setMidtermTotal(parseFloat(e.target.value) || 30)}
+                              className="w-full text-center px-1.5 py-1 text-xs bg-white border border-slate-200 rounded-md font-bold text-slate-700 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8px] font-bold text-slate-400 uppercase">Weightage</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={midtermWeightage}
+                              onChange={(e) => setMidtermWeightage(parseFloat(e.target.value) || 20)}
+                              className="w-full text-center px-1.5 py-1 text-xs bg-white border border-slate-200 rounded-md font-bold text-slate-700 outline-none"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2.5 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <span className="text-[10px] font-bold text-slate-600 block">End Semester Exam Details</span>
+                      <div className="grid grid-cols-3 gap-2.5">
+                        <div>
+                          <label className="block text-[8px] font-bold text-slate-400 uppercase">Obtained</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max={endSemTotal}
+                            value={endSemObtained}
+                            onChange={(e) => setEndSemObtained(parseFloat(e.target.value) || 0)}
+                            className="w-full text-center px-1.5 py-1 text-xs bg-white border border-slate-200 rounded-md font-bold text-slate-700 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[8px] font-bold text-slate-400 uppercase">Total Max</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={endSemTotal}
+                            onChange={(e) => setEndSemTotal(parseFloat(e.target.value) || 100)}
+                            className="w-full text-center px-1.5 py-1 text-xs bg-white border border-slate-200 rounded-md font-bold text-slate-700 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[8px] font-bold text-slate-400 uppercase">Weightage</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={endSemWeightage}
+                            onChange={(e) => setEndSemWeightage(parseFloat(e.target.value) || 50)}
+                            className="w-full text-center px-1.5 py-1 text-xs bg-white border border-slate-200 rounded-md font-bold text-slate-700 outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
                 )}
               </div>
 

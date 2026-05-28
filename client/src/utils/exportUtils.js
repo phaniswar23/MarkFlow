@@ -1,6 +1,6 @@
 import { calculateSubjectMarks } from './calcEngine';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 
 /**
  * Generates and downloads an Excel-compatible CSV sheet of semester subjects and metrics.
@@ -231,5 +231,52 @@ export const exportToPDF = async (subjects, overallStats = {}) => {
     alert('Unable to generate PDF. Please try again.');
   } finally {
     document.body.removeChild(element);
+  }
+};
+
+/**
+ * Universal exporter that captures a DOM element by ID and downloads it as PNG or PDF.
+ * @param {string} elementId - The ID of the HTML element to capture
+ * @param {string} type - 'pdf' or 'png'
+ * @param {string} filename - The output file name
+ */
+export const exportElement = async (elementId, type = 'pdf', filename = 'MarkFlow_Export') => {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    console.error(`Element with id ${elementId} not found`);
+    alert(`Could not find content to export! Please make sure calculation is done.`);
+    return;
+  }
+  
+  try {
+    const canvas = await html2canvas(element, {
+      scale: 2.2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff'
+    });
+    
+    if (type === 'png') {
+      const imgData = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = imgData;
+      link.download = `${filename}.png`;
+      link.click();
+    } else {
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+      pdf.save(`${filename}.pdf`);
+    }
+  } catch (err) {
+    console.error('Export Error:', err);
+    alert('Export failed. Please try again.');
   }
 };

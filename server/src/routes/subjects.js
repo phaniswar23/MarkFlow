@@ -14,7 +14,12 @@ router.get('/', async (req, res) => {
 
 // POST new subject
 router.post('/', async (req, res) => {
-  const { name, code, weightage, targetScore, selectionLogic, assessments } = req.body;
+  const { 
+    name, code, weightage, targetScore, selectionLogic, assessments,
+    attendance, attendanceWeightage, midtermApplicable, midtermObtained,
+    midtermTotal, midtermWeightage, endSemApplicable, endSemObtained,
+    endSemTotal, endSemWeightage, credits, includeInCGPA
+  } = req.body;
   
   if (!name || !code || weightage === undefined) {
     return res.status(400).json({ message: 'Subject name, code, and weightage are required' });
@@ -24,12 +29,9 @@ router.post('/', async (req, res) => {
   const trimmedCode = code.trim();
 
   try {
-    // Strict, case-insensitive, trimmed checks for duplicate name OR code
+    // Only check case-insensitive course code duplication since name is optional and can default to "Untitled Subject"
     const duplicate = await Subject.findOne({
-      $or: [
-        { name: { $regex: new RegExp(`^${trimmedName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } },
-        { code: { $regex: new RegExp(`^${trimmedCode.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } }
-      ]
+      code: { $regex: new RegExp(`^${trimmedCode.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') }
     });
 
     if (duplicate) {
@@ -45,7 +47,19 @@ router.post('/', async (req, res) => {
       assessments: assessments || [
         { name: 'CA1', obtainedMarks: 0, totalMarks: 30 },
         { name: 'CA2', obtainedMarks: 0, totalMarks: 30 }
-      ]
+      ],
+      attendance: attendance === undefined ? 100 : attendance,
+      attendanceWeightage: attendanceWeightage === undefined ? 5 : attendanceWeightage,
+      midtermApplicable: midtermApplicable === undefined ? false : midtermApplicable,
+      midtermObtained: midtermObtained === undefined ? 0 : midtermObtained,
+      midtermTotal: midtermTotal === undefined ? 30 : midtermTotal,
+      midtermWeightage: midtermWeightage === undefined ? 20 : midtermWeightage,
+      endSemApplicable: endSemApplicable === undefined ? false : endSemApplicable,
+      endSemObtained: endSemObtained === undefined ? 0 : endSemObtained,
+      endSemTotal: endSemTotal === undefined ? 100 : endSemTotal,
+      endSemWeightage: endSemWeightage === undefined ? 50 : endSemWeightage,
+      credits: credits === undefined ? 3 : credits,
+      includeInCGPA: includeInCGPA === undefined ? true : includeInCGPA
     });
     
     const savedSubject = await newSubject.save();
@@ -57,27 +71,23 @@ router.post('/', async (req, res) => {
 
 // PUT update existing subject
 router.put('/:id', async (req, res) => {
-  const { name, code, weightage, targetScore, selectionLogic, assessments } = req.body;
+  const { 
+    name, code, weightage, targetScore, selectionLogic, assessments,
+    attendance, attendanceWeightage, midtermApplicable, midtermObtained,
+    midtermTotal, midtermWeightage, endSemApplicable, endSemObtained,
+    endSemTotal, endSemWeightage, credits, includeInCGPA
+  } = req.body;
   try {
     const subject = await Subject.findById(req.params.id);
     if (!subject) {
       return res.status(404).json({ message: 'Subject not found' });
     }
 
-    // Verify name duplication on edit
     if (name !== undefined) {
-      const trimmedName = name.trim();
-      const duplicateName = await Subject.findOne({
-        _id: { $ne: req.params.id },
-        name: { $regex: new RegExp(`^${trimmedName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') }
-      });
-      if (duplicateName) {
-        return res.status(400).json({ message: 'Subject already exists' });
-      }
-      subject.name = trimmedName;
+      subject.name = name.trim();
     }
 
-    // Verify code duplication on edit
+    // Verify code duplication on edit (ensure no other subject has the new course code)
     if (code !== undefined) {
       const trimmedCode = code.trim();
       const duplicateCode = await Subject.findOne({
@@ -94,6 +104,19 @@ router.put('/:id', async (req, res) => {
     if (targetScore !== undefined) subject.targetScore = targetScore;
     if (selectionLogic !== undefined) subject.selectionLogic = selectionLogic;
     if (assessments !== undefined) subject.assessments = assessments;
+    
+    if (attendance !== undefined) subject.attendance = attendance;
+    if (attendanceWeightage !== undefined) subject.attendanceWeightage = attendanceWeightage;
+    if (midtermApplicable !== undefined) subject.midtermApplicable = midtermApplicable;
+    if (midtermObtained !== undefined) subject.midtermObtained = midtermObtained;
+    if (midtermTotal !== undefined) subject.midtermTotal = midtermTotal;
+    if (midtermWeightage !== undefined) subject.midtermWeightage = midtermWeightage;
+    if (endSemApplicable !== undefined) subject.endSemApplicable = endSemApplicable;
+    if (endSemObtained !== undefined) subject.endSemObtained = endSemObtained;
+    if (endSemTotal !== undefined) subject.endSemTotal = endSemTotal;
+    if (endSemWeightage !== undefined) subject.endSemWeightage = endSemWeightage;
+    if (credits !== undefined) subject.credits = credits;
+    if (includeInCGPA !== undefined) subject.includeInCGPA = includeInCGPA;
 
     const updatedSubject = await subject.save();
     res.json(updatedSubject);

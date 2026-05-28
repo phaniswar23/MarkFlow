@@ -1,15 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, BookOpen, GraduationCap, Calculator, Award, Sparkles, RefreshCw, BarChart2, Search, Trash2, Edit3, AlertTriangle, Filter, ArrowUpDown, Terminal, MessageSquare, Download, FileText, Share2, X, ArrowLeft, User } from 'lucide-react';
+import { Plus, BookOpen, GraduationCap, Calculator, Award, Sparkles, RefreshCw, BarChart2, Search, Trash2, Edit3, AlertTriangle, Filter, ArrowUpDown, Terminal, MessageSquare, Download, FileText, Share2, X, ArrowLeft, User, Menu, Home, Settings, HelpCircle, ChevronRight, ChevronLeft, Clock, Calendar } from 'lucide-react';
 import { Card, SyncStatus, Badge, CardProgressRing } from './components/UI';
 import SubjectDetailsPanel from './components/SubjectDetailsPanel';
 import DeveloperProfilePanel from './components/DeveloperProfilePanel';
 import FeedbackModal from './components/FeedbackModal';
 import CreateSubjectModal from './components/CreateSubjectModal';
 import ConfirmationModal from './components/ConfirmationModal';
+import DisclaimerModal from './components/DisclaimerModal';
 import { ToastContainer } from './components/Toast';
 import { calculateSubjectMarks } from './utils/calcEngine';
 import { exportToCSV, exportToPDF } from './utils/exportUtils';
+
+// Modular Subpages
+import DashboardPage from './components/pages/DashboardPage';
+import CAWeightagePage from './components/pages/CAWeightagePage';
+import SubjectWisePage from './components/pages/SubjectWisePage';
+import SemesterCGPAPage from './components/pages/SemesterCGPAPage';
+import OverallCGPAPage from './components/pages/OverallCGPAPage';
+import AnalyticsPage from './components/pages/AnalyticsPage';
+import FormulasGradePage from './components/pages/FormulasGradePage';
+import SettingsPage from './components/pages/SettingsPage';
+import AboutDeveloperPage from './components/pages/AboutDeveloperPage';
+import HistoryPage from './components/pages/HistoryPage';
+import BunkPlannerPage from './components/pages/BunkPlannerPage';
 
 const API_BASE_URL = 'http://localhost:5001/api';
 
@@ -18,6 +32,153 @@ export default function App() {
   const [activeSubject, setActiveSubject] = useState(null);
   const [backendConnected, setBackendConnected] = useState(false);
   const [syncing, setSyncing] = useState(false);
+
+  // History State
+  const [historyList, setHistoryList] = useState(() => {
+    const saved = localStorage.getItem('markflow-history');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // CA Sessions State
+  const [recentCASessions, setRecentCASessions] = useState(() => {
+    const saved = localStorage.getItem('markflow-recent-ca');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [caToSubjectTransferData, setCaToSubjectTransferData] = useState(null);
+
+  // Trash Bin State
+  const [trashList, setTrashList] = useState(() => {
+    const saved = localStorage.getItem('markflow-trash');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [autoDeleteTrash, setAutoDeleteTrash] = useState(() => {
+    return localStorage.getItem('markflow-trash-autodelete') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('markflow-trash', JSON.stringify(trashList));
+  }, [trashList]);
+
+  useEffect(() => {
+    localStorage.setItem('markflow-trash-autodelete', autoDeleteTrash ? 'true' : 'false');
+  }, [autoDeleteTrash]);
+
+  // Effect to automatically delete items in Trash older than 10 days
+  useEffect(() => {
+    if (autoDeleteTrash && trashList.length > 0) {
+      const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
+      const filtered = trashList.filter(item => {
+        const diff = Date.now() - new Date(item.deletedAt).getTime();
+        return diff < tenDaysMs;
+      });
+      if (filtered.length !== trashList.length) {
+        setTrashList(filtered);
+      }
+    }
+  }, [autoDeleteTrash, trashList]);
+
+  const addToTrash = (type, title, originalData) => {
+    const trashItem = {
+      id: 'trash_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+      type, // 'subject', 'ca_session', 'semester'
+      title,
+      deletedAt: new Date().toISOString(),
+      originalData
+    };
+    setTrashList(prev => [trashItem, ...prev]);
+  };
+
+  const handleRestoreTrashItem = (item) => {
+    if (item.type === 'subject') {
+      const restored = [item.originalData, ...subjects];
+      setSubjects(restored);
+      saveToLocalStorage(restored);
+      addToast(`Restored subject: ${item.originalData.name}`, 'success');
+      if (backendConnected) {
+        try {
+          const { id, _id, ...cleanSubject } = item.originalData;
+          fetch(`${API_BASE_URL}/subjects`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cleanSubject)
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    } else if (item.type === 'ca_session') {
+      setRecentCASessions(prev => {
+        const updated = [item.originalData, ...prev];
+        localStorage.setItem('markflow-recent-ca', JSON.stringify(updated));
+        return updated;
+      });
+      addToast(`Restored CA session: ${item.originalData.name}`, 'success');
+    } else if (item.type === 'semester') {
+      setOverallSemesters(prev => [...prev, item.originalData]);
+      addToast(`Restored semester: ${item.originalData.name}`, 'success');
+    } else if (item.type === 'history_log') {
+      setHistoryList(prev => {
+        const updated = [item.originalData, ...prev];
+        localStorage.setItem('markflow-history', JSON.stringify(updated));
+        return updated;
+      });
+      addToast(`Restored activity log: ${item.originalData.title}`, 'success');
+    }
+
+    setTrashList(prev => prev.filter(t => t.id !== item.id));
+  };
+
+  const handlePermanentDeleteTrashItem = (itemId) => {
+    setTrashList(prev => prev.filter(t => t.id !== itemId));
+    addToast('Permanently deleted from Trash Bin', 'info');
+  };
+
+  const handleClearTrash = () => {
+    setTrashList([]);
+    addToast('Trash Bin cleared', 'info');
+  };
+
+  const handleSetSemesters = (updated) => {
+    const nextSemesters = typeof updated === 'function' ? updated(overallSemesters) : updated;
+    if (nextSemesters.length < overallSemesters.length) {
+      const deletedItem = overallSemesters.find(oldSem => !nextSemesters.some(newSem => newSem.id === oldSem.id));
+      if (deletedItem) {
+        addToTrash('semester', `Semester: ${deletedItem.name}`, deletedItem);
+      }
+    }
+    setOverallSemesters(nextSemesters);
+  };
+
+  const addRecentCASession = (session) => {
+    setRecentCASessions(prev => {
+      const updated = [session, ...prev];
+      localStorage.setItem('markflow-recent-ca', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleNavigateToSubjectWiseFromCA = (caData) => {
+    setCaToSubjectTransferData(caData);
+    setActivePage('subject-wise');
+  };
+
+  const addHistoryItem = (type, title, summary, payload = {}) => {
+    const newItem = {
+      id: 'hist_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+      type,
+      title,
+      summary,
+      timestamp: new Date().toISOString(),
+      pinned: false,
+      payload
+    };
+    setHistoryList(prev => {
+      const updated = [newItem, ...prev];
+      localStorage.setItem('markflow-history', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   // Search, Filter & Sort states
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,8 +190,62 @@ export default function App() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
-  const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
+  const [hasAcceptedDisclaimer, setHasAcceptedDisclaimer] = useState(() => {
+    return localStorage.getItem('markflow_disclaimer_accepted') === 'true';
+  });
+  const [showDisclaimerModal, setShowDisclaimerModal] = useState(() => {
+    return localStorage.getItem('markflow_disclaimer_accepted') !== 'true';
+  });
+
+  // Router & Navigation states
+  const [activePage, setActivePage] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [caUnsaved, setCaUnsaved] = useState(false);
+  const [subjectWiseUnsaved, setSubjectWiseUnsaved] = useState(false);
+  const [semesterCGPAUnsaved, setSemesterCGPAUnsaved] = useState(false);
+  const [pendingPage, setPendingPage] = useState(null);
+
+  const handlePageChange = (targetPage) => {
+    const hasUnsaved = (activePage === 'ca-weightage' && caUnsaved) || 
+                       (activePage === 'subject-wise' && subjectWiseUnsaved) || 
+                       (activePage === 'semester-cgpa' && semesterCGPAUnsaved);
+    if (hasUnsaved) {
+      setPendingPage(targetPage);
+    } else {
+      setActivePage(targetPage);
+    }
+  };
+
+  const [globalTargetAttendance, setGlobalTargetAttendance] = useState(() => parseInt(localStorage.getItem('markflow-target-attendance')) || 75);
+
+  useEffect(() => {
+    localStorage.setItem('markflow-target-attendance', globalTargetAttendance);
+  }, [globalTargetAttendance]);
   
+  // Global Advanced Features Toggle state
+  const [showAdvanced, setShowAdvanced] = useState(() => {
+    return localStorage.getItem('markflow-show-advanced') === 'true';
+  });
+
+  const handleSetShowAdvanced = (val) => {
+    setShowAdvanced(val);
+    localStorage.setItem('markflow-show-advanced', val ? 'true' : 'false');
+  };
+  const [overallSemesters, setOverallSemesters] = useState(() => {
+    try {
+      const saved = localStorage.getItem('markflow-overall-semesters');
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.error("Failed to parse overall semesters:", e);
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('markflow-overall-semesters', JSON.stringify(overallSemesters));
+  }, [overallSemesters]);
   // Undo States and Refs
   const [undoSubject, setUndoSubject] = useState(null);
   const [undoSubjectTimer, setUndoSubjectTimer] = useState(0);
@@ -78,7 +293,7 @@ export default function App() {
   };
 
   const handleOpenCreateModal = () => {
-    const accepted = localStorage.getItem('markflow-disclaimer-accepted') === 'true';
+    const accepted = localStorage.getItem('markflow_disclaimer_accepted') === 'true';
     if (accepted) {
       setShowCreateModal(true);
     } else {
@@ -87,9 +302,10 @@ export default function App() {
   };
 
   const handleAcceptDisclaimer = () => {
-    localStorage.setItem('markflow-disclaimer-accepted', 'true');
+    localStorage.setItem('markflow_disclaimer_accepted', 'true');
+    setHasAcceptedDisclaimer(true);
     setShowDisclaimerModal(false);
-    setShowCreateModal(true);
+    addToast("Disclaimer accepted. Welcome to MarkFlow Academic OS! 🎉", "success");
   };
 
   // Keyboard Shortcut: Ctrl + S, Cmd + S, Alt/Option + S, or Cmd + Shift + S to open the Create Subject Modal
@@ -178,6 +394,25 @@ export default function App() {
     localStorage.setItem('markflow-subjects', JSON.stringify(data));
   };
 
+  // Register Service Worker for PWA/Offline Failover
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('MarkFlow PWA ServiceWorker registered with scope:', reg.scope))
+          .catch(err => console.log('MarkFlow ServiceWorker registration failed:', err));
+      });
+    }
+  }, []);
+
+  // Proactive Route Check: Redirect mode=quick to Semester SGPA Page on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'quick') {
+      setActivePage('semester-cgpa');
+    }
+  }, []);
+
   // 2. Add New Subject (Triggered after CreateSubjectModal passes strict checks)
   const handleCreateSubject = async (newSubjectData) => {
     // Optimistically update frontend state
@@ -187,6 +422,14 @@ export default function App() {
     setSubjects(updatedSubjects);
     saveToLocalStorage(updatedSubjects);
     addToast('Subject created successfully', 'success');
+
+    // Automatically Log to History
+    addHistoryItem(
+      'subject',
+      'Subject Created',
+      `Added ${newSubjectData.name} (${newSubjectData.code}) with credit limit ${newSubjectData.credits || 3}`,
+      newSubjectData
+    );
 
     // Persist to Backend if available
     if (backendConnected) {
@@ -221,9 +464,73 @@ export default function App() {
 
   // 3. Save Active Subject (Auto-saves live as user types in details panel)
   const handleSaveSubject = async (updatedSubject) => {
+    const exists = subjects.some(s => s.id === updatedSubject.id);
+    if (!exists) {
+      const updatedList = [updatedSubject, ...subjects];
+      setSubjects(updatedList);
+      saveToLocalStorage(updatedList);
+
+      addHistoryItem(
+        'subject',
+        'Subject Created',
+        `Added ${updatedSubject.name} (${updatedSubject.code}) with credit limit ${updatedSubject.credits || 3}`,
+        updatedSubject
+      );
+      addToast('Subject created successfully', 'success');
+
+      if (backendConnected) {
+        try {
+          const { id, _id, ...cleanSubject } = updatedSubject;
+          const res = await fetch(`${API_BASE_URL}/subjects`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cleanSubject)
+          });
+          
+          if (res.ok) {
+            const saved = await res.json();
+            const resolved = updatedList.map(sub => 
+              sub.id === updatedSubject.id ? { ...saved, id: saved._id || saved.id } : sub
+            );
+            setSubjects(resolved);
+            saveToLocalStorage(resolved);
+          } else {
+            const errData = await res.json();
+            addToast(errData.message || 'Error saving subject to database', 'error');
+            const reverted = updatedList.filter(sub => sub.id !== updatedSubject.id);
+            setSubjects(reverted);
+            saveToLocalStorage(reverted);
+          }
+        } catch (err) {
+          console.error('Error saving subject to MongoDB, keeping local version:', err);
+        }
+      }
+      return;
+    }
+
     const updatedList = subjects.map(s => s.id === updatedSubject.id ? updatedSubject : s);
     setSubjects(updatedList);
     saveToLocalStorage(updatedList);
+
+    // Automatically Log to History if attendance or score changed
+    const original = subjects.find(s => s.id === updatedSubject.id);
+    if (original) {
+      if (original.attendance !== updatedSubject.attendance) {
+        addHistoryItem(
+          'attendance',
+          'Attendance Updated',
+          `${updatedSubject.name} (${updatedSubject.code}) attendance adjusted to ${updatedSubject.attendance}%`,
+          { id: updatedSubject.id, attendance: updatedSubject.attendance }
+        );
+      } else {
+        addHistoryItem(
+          'predictions',
+          'Subject Scores Computed',
+          `Recalculated grade estimates and overall assessment metrics for ${updatedSubject.name}`,
+          updatedSubject
+        );
+      }
+    }
 
     // Save to Database asynchronously
     if (backendConnected && !updatedSubject.id.startsWith('temp_')) {
@@ -288,6 +595,11 @@ export default function App() {
 
   const commitDeleteSubject = async (id, currentList) => {
     saveToLocalStorage(currentList);
+    const sub = subjects.find(s => s.id === id) || undoSubject;
+    if (sub) {
+      addToTrash('subject', `Subject: ${sub.name} (${sub.code})`, sub);
+      addToast(`Subject deleted. You can restore it from the Trash Bin!`, 'info');
+    }
     if (backendConnected && !id.toString().startsWith('temp_')) {
       try {
         await fetch(`${API_BASE_URL}/subjects/${id}`, {
@@ -357,6 +669,12 @@ export default function App() {
 
   const commitDeleteAll = async () => {
     saveToLocalStorage([]);
+    if (undoAllList) {
+      undoAllList.forEach(sub => {
+        addToTrash('subject', `Subject: ${sub.name} (${sub.code})`, sub);
+      });
+      addToast('All subjects deleted. You can restore them from the Trash Bin!', 'info');
+    }
     if (backendConnected) {
       try {
         await fetch(`${API_BASE_URL}/subjects`, {
@@ -404,12 +722,15 @@ export default function App() {
 
   // Global calculations
   const totalSubjectsCount = subjects.length;
-  const overallAverages = subjects.map(sub => ({
-    ...sub,
-    metrics: calculateSubjectMarks(sub)
-  }));
+  const overallAverages = (subjects || []).map(sub => {
+    if (!sub) return {};
+    return {
+      ...sub,
+      metrics: calculateSubjectMarks(sub)
+    };
+  }).filter(s => s && s.code);
   
-  const totalWeightage = overallAverages.reduce((sum, item) => sum + (parseFloat(item.metrics.weightedMarks) ? item.metrics.weightedMarks : 0), 0);
+  const totalWeightage = overallAverages.reduce((sum, item) => sum + (item.metrics && parseFloat(item.metrics.weightedMarks) ? parseFloat(item.metrics.weightedMarks) : 0), 0);
   const maxPossibleWeightage = subjects.reduce((sum, item) => sum + (parseFloat(item.weightage) ? parseFloat(item.weightage) : 0), 0);
   const overallPercentage = maxPossibleWeightage > 0 ? (totalWeightage / maxPossibleWeightage) * 100 : 0;
 
@@ -442,545 +763,437 @@ export default function App() {
     percentageTextColor = 'text-calm-rose';
   }
 
+  // Sidebar Navigation list
+  const sidebarItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: <Home size={16} /> },
+    { id: 'ca-weightage', label: 'CA Weightage', icon: <Calculator size={16} /> },
+    { id: 'subject-wise', label: 'Subject-wise', icon: <GraduationCap size={16} /> },
+    { id: 'bunk-planner', label: 'Bunk Planner', icon: <Calendar size={16} /> },
+    { id: 'semester-cgpa', label: 'Semester SGPA', icon: <BookOpen size={16} /> },
+    { id: 'overall-cgpa', label: 'Overall CGPA', icon: <Award size={16} /> },
+    { id: 'analytics', label: 'Analytics', icon: <BarChart2 size={16} /> },
+    { id: 'history', label: 'History', icon: <Clock size={16} /> },
+    { id: 'formulas', label: 'Formulas & Grades', icon: <HelpCircle size={16} /> },
+    { id: 'settings', label: 'Settings', icon: <Settings size={16} /> },
+    { id: 'about', label: 'About Developer', icon: <User size={16} /> }
+  ];
+
+  // Callback to update includeInCGPA from SemesterCGPAPage
+  const handleUpdateSubjectCGPAStatus = async (subId, include) => {
+    const sub = subjects.find(s => (s.id || s._id) === subId);
+    if (!sub) return;
+    const updated = { ...sub, includeInCGPA: include };
+    await handleSaveSubject(updated);
+  };
+
+  // Helper calculations for Overall CGPA Page import
+  const includedSubjects = (subjects || []).filter(s => s && s.includeInCGPA !== false && s.code);
+  const semesterCredits = includedSubjects.reduce((sum, s) => sum + (parseFloat(s.credits) || 3), 0);
+  const getGradePoint = (percentage) => {
+    if (percentage >= 90) return 10;
+    if (percentage >= 80) return 9;
+    if (percentage >= 70) return 8;
+    if (percentage >= 60) return 7;
+    if (percentage >= 51) return 6;
+    if (percentage >= 41) return 5;
+    if (percentage === 40) return 4;
+    return 0;
+  };
+  const semesterPoints = includedSubjects.reduce((sum, s) => {
+    if (!s) return sum;
+    const metrics = calculateSubjectMarks(s);
+    const gp = getGradePoint(metrics?.percentage || 0);
+    return sum + (gp * (parseFloat(s.credits) || 3));
+  }, 0);
+  const semesterSGPA = semesterCredits > 0 ? (semesterPoints / semesterCredits) : 0;
+
+  const handleDeleteCASession = (id) => {
+    const session = recentCASessions.find(s => s.id === id);
+    setRecentCASessions(prev => {
+      const updated = prev.filter(s => s.id !== id);
+      localStorage.setItem('markflow-recent-ca', JSON.stringify(updated));
+      return updated;
+    });
+    if (session) {
+      addToTrash('ca_session', `CA Session: ${session.name} (${session.code})`, session);
+    }
+    addToast('CA Session deleted', 'success');
+  };
+
   return (
-    <div className="min-h-screen flex flex-col pb-24 font-sans bg-[#f8fafc]">
-      {/* Toast Notification Container */}
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#f8fafc] font-sans text-slate-800 antialiased overflow-hidden">
+      {/* Toast Notification System */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-      {/* Header section with connection signals */}
-      <header className="bg-white border-b border-slate-100 py-4 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-40 backdrop-blur-md bg-white/80 select-none">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center text-white shadow-sm">
-            <GraduationCap size={18} />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-slate-800 tracking-tight leading-none">MarkFlow</h1>
-            <span className="text-[10px] font-semibold text-slate-400">Continuous Assessment Calculator</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {syncing && <RefreshCw size={13} className="animate-spin text-slate-400" />}
-          <SyncStatus isConnected={backendConnected} />
-        </div>
-      </header>
-
-      {/* Main Student Hub Container */}
-      <main className="max-w-7xl w-full mx-auto px-4 sm:px-8 mt-6 flex-1 flex flex-col gap-6">
-        
-        {/* Dynamic Metric Dashboard card */}
-        <div className={`bg-white border rounded-2xl p-6 shadow-soft transition-grow-glow flex flex-col md:flex-row items-start md:items-center justify-between gap-6 ${summaryGlowColor}`}>
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 select-none">
-                <span>Semester Stats</span>
-                <Sparkles size={16} className="text-amber-400" />
-              </h2>
-              {totalSubjectsCount > 0 && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Export Dropdown Trigger */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowExportDropdown(!showExportDropdown)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/10 text-slate-600 hover:text-calm-indigo rounded-xl text-xs font-bold transition-all cursor-pointer outline-none focus:ring-2 focus:ring-indigo-100"
-                      title="Export assessment data as PDF or CSV"
-                    >
-                      <Download size={12} />
-                      <span>Export</span>
-                    </button>
-                    
-                    {showExportDropdown && (
-                      <>
-                        {/* Overlay backdrop to dismiss dropdown */}
-                        <div 
-                          className="fixed inset-0 z-30" 
-                          onClick={() => setShowExportDropdown(false)}
-                        />
-                        <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-44 bg-white border border-slate-100 rounded-xl shadow-lg py-1.5 z-40 animate-none">
-                          <button
-                            onClick={() => {
-                              exportToPDF(subjects, { overallPercentage, totalWeightage, maxPossibleWeightage });
-                              setShowExportDropdown(false);
-                            }}
-                            className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-600 hover:text-calm-indigo hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer"
-                          >
-                            <FileText size={13} className="text-slate-400" />
-                            <span>Export as PDF Report</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              exportToCSV(subjects, { overallPercentage, totalWeightage, maxPossibleWeightage });
-                              setShowExportDropdown(false);
-                            }}
-                            className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-600 hover:text-calm-indigo hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer"
-                          >
-                            <Share2 size={13} className="text-slate-400" />
-                            <span>Export as CSV Sheet</span>
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={triggerDeleteAllProcess}
-                    className="flex items-center gap-1.5 px-3 py-1.5 border border-rose-200 text-rose-500 hover:text-white hover:bg-rose-500 rounded-xl text-xs font-bold transition-all cursor-pointer outline-none focus:ring-2 focus:ring-rose-200 animate-none"
-                    title="Clear all modules permanently"
-                  >
-                    <Trash2 size={12} />
-                    <span>Delete All</span>
-                  </button>
-                </div>
-              )}
+      {/* Desktop Left Sidebar Panel */}
+      <aside 
+        className={`hidden md:flex flex-col justify-between shrink-0 bg-slate-900 border-r border-slate-800 text-slate-400 select-none transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-64'}`}
+      >
+        <div className="flex flex-col">
+          {/* Sidebar Brand Header */}
+          <div className="p-5 flex items-center gap-3 border-b border-slate-800/60 h-16">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
+              <GraduationCap size={20} />
             </div>
-            <p className="text-xs text-slate-500 max-w-lg leading-relaxed select-none">
-              Live updates of standard internal markings based on continuous calculations.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-3 sm:flex items-center gap-3 sm:gap-6 w-full md:w-auto shrink-0 select-none border-t sm:border-t-0 border-slate-100 pt-4 sm:pt-0 text-center sm:text-left">
-            <div className="flex flex-col">
-              <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block">SUBJECTS</span>
-              <span className="text-xl sm:text-2xl font-black text-slate-700 font-sans">{totalSubjectsCount}</span>
-            </div>
-            
-            <div className="flex flex-col sm:border-l sm:border-slate-100 sm:pl-6">
-              <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ESTIMATED CA</span>
-              <span className="text-xl sm:text-2xl font-black text-slate-700 font-sans">
-                {totalWeightage.toFixed(1).replace('.0', '')}
-                <span className="text-xs sm:text-sm font-medium text-slate-400">/{maxPossibleWeightage}</span>
-              </span>
-            </div>
-
-            <div className="flex flex-col sm:border-l sm:border-slate-100 sm:pl-6">
-              <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block">INTERNAL AVG</span>
-              <span className={`text-xl sm:text-2xl font-black ${percentageTextColor}`}>
-                {overallPercentage.toFixed(1).replace('.0', '')}%
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Undo Banners Container */}
-        <AnimatePresence>
-          {undoSubject && (
-            <motion.div
-              initial={{ opacity: 0, height: 0, y: -10 }}
-              animate={{ opacity: 1, height: 'auto', y: 0 }}
-              exit={{ opacity: 0, height: 0, y: -10 }}
-              className="overflow-hidden w-full select-none"
-            >
-              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white shadow-lg flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-rose-400 shrink-0">
-                    <Trash2 size={14} className="animate-pulse" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black tracking-tight text-white leading-none">Subject Deleted</h4>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-none">
-                      Deleted <strong className="text-slate-200">{undoSubject.name}</strong>. Permanently saving in <strong className="text-rose-400">{(undoSubjectTimer / 1000).toFixed(1)}s</strong>...
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleUndoSubjectDelete}
-                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-soft outline-none focus:ring-2 focus:ring-indigo-300"
-                  >
-                    Undo Deletion
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (undoSubjectTimerRef.current) {
-                        clearInterval(undoSubjectTimerRef.current);
-                      }
-                      commitDeleteSubject(undoSubject.id, subjects.filter(s => s.id !== undoSubject.id));
-                      setUndoSubject(null);
-                    }}
-                    className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
-                    title="Dismiss & Save Now"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-              <div className="w-full bg-slate-800 h-1 overflow-hidden mt-1.5 rounded-full">
-                <div 
-                  className="bg-indigo-500 h-full transition-all duration-100" 
-                  style={{ width: `${(undoSubjectTimer / 5000) * 100}%` }}
-                />
-              </div>
-            </motion.div>
-          )}
-
-          {undoAllList && (
-            <motion.div
-              initial={{ opacity: 0, height: 0, y: -10 }}
-              animate={{ opacity: 1, height: 'auto', y: 0 }}
-              exit={{ opacity: 0, height: 0, y: -10 }}
-              className="overflow-hidden w-full select-none"
-            >
-              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white shadow-lg flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-rose-400 shrink-0">
-                    <Trash2 size={14} className="animate-pulse" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black tracking-tight text-white leading-none">All Subjects Cleared</h4>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-none">
-                      Semester board cleared. Permanently wiping in <strong className="text-rose-400">{(undoAllTimer / 1000).toFixed(1)}s</strong>...
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleUndoDeleteAll}
-                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-soft outline-none focus:ring-2 focus:ring-indigo-300"
-                  >
-                    Undo (Restore Board)
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (undoAllTimerRef.current) {
-                        clearInterval(undoAllTimerRef.current);
-                      }
-                      commitDeleteAll();
-                      setUndoAllList(null);
-                    }}
-                    className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
-                    title="Dismiss & Clear Now"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-              <div className="w-full bg-slate-800 h-1 overflow-hidden mt-1.5 rounded-full">
-                <div 
-                  className="bg-indigo-500 h-full transition-all duration-100" 
-                  style={{ width: `${(undoAllTimer / 10000) * 100}%` }}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Filters and Search Row (SaaS Style) - Hidden on Mobile, Flex on Desktop */}
-        <div className="hidden md:flex bg-white border border-slate-100 p-4 rounded-2xl shadow-soft flex-col md:flex-row md:items-center justify-between gap-4 select-none">
-          {/* Search bar */}
-          <div className="relative flex-1 max-w-md">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <Search size={15} />
-            </span>
-            <input
-              type="text"
-              placeholder="Search subject by name or code..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-calm-indigo/20 focus:border-calm-indigo rounded-xl outline-none transition-all text-slate-800"
-            />
-          </div>
-
-          {/* Filtering tabs */}
-          <div className="flex flex-wrap items-center gap-2 max-w-full overflow-hidden">
-            <div className="flex bg-slate-50 border border-slate-200 rounded-xl p-0.5 overflow-x-auto max-w-full flex-nowrap scrollbar-none">
-              {[
-                { key: 'all', label: 'All CAs' },
-                { key: 'excellent', label: 'Excellent (≥75%)' },
-                { key: 'passing', label: 'Passing (40-75%)' },
-                { key: 'needs_attention', label: 'Attention (<40%)' }
-              ].map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setPerformanceFilter(tab.key)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer outline-none focus:ring-2 focus:ring-calm-indigo/10 shrink-0 ${
-                    performanceFilter === tab.key
-                      ? 'bg-white text-calm-indigo shadow-soft font-extrabold border border-slate-100'
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50 border border-transparent'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Sorting menu */}
-            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 py-0.5">
-              <ArrowUpDown size={12} className="text-slate-400 mr-1.5" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-transparent text-[10px] font-bold text-slate-600 outline-none pr-4 cursor-pointer py-1.5"
+            {!sidebarCollapsed && (
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                className="text-left"
               >
-                <option value="recent">Recently Added</option>
-                <option value="highest">Highest Score</option>
-                <option value="lowest">Lowest Score</option>
-              </select>
-            </div>
+                <h1 className="text-sm font-black text-white tracking-tight leading-none">MarkFlow</h1>
+                <span className="text-[10px] font-bold text-slate-500 mt-1 block">Academic OS</span>
+              </motion.div>
+            )}
           </div>
-        </div>
 
-        {/* Subjects & Utilities Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-          
-          {/* Render Subject Cards list */}
-          <AnimatePresence>
-            {filteredSubjects.map(({ id, name, code, weightage, selectionLogic, assessments, metrics }) => {
-              
-              // Color variables for separate card glows
-              let cardGlow = 'none';
-              let accentColor = 'bg-calm-indigo';
-              let statusLabel = 'Average';
-              let statusChipStyle = 'bg-amber-50 text-amber-600 border-amber-100/50';
-              
-              if (metrics.percentage >= 75) {
-                cardGlow = 'teal';
-                accentColor = 'bg-calm-teal';
-                statusLabel = 'Excellent';
-                statusChipStyle = 'bg-emerald-50 text-emerald-600 border-emerald-100/50';
-              } else if (metrics.percentage < 40) {
-                cardGlow = 'rose';
-                accentColor = 'bg-calm-rose';
-                statusLabel = 'At Risk';
-                statusChipStyle = 'bg-rose-50 text-rose-600 border-rose-100/50';
-              }
-
-              // Pre-format dynamic human-readable timestamps
-              const lastUpdated = metrics.updatedAt ? new Date(metrics.updatedAt) : new Date();
-              const timeString = lastUpdated.toLocaleDateString(undefined, { 
-                month: 'short', 
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              });
-
+          {/* Navigation Links */}
+          <nav className="p-3.5 space-y-1.5">
+            {sidebarItems.map(item => {
+              const isActive = activePage === item.id;
               return (
-                <motion.div
-                  key={id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.3 }}
-                  layout
+                <button
+                  key={item.id}
+                  onClick={() => handlePageChange(item.id)}
+                  className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all transform hover:translate-x-1.5 hover:scale-[1.02] group relative cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500/25 ${isActive ? 'bg-indigo-600 text-white font-black shadow-lg shadow-indigo-600/15' : 'hover:bg-slate-800/40 hover:text-white'}`}
                 >
-                  <Card
-                    onClick={() => setActiveSubject({ id, name, code, weightage, selectionLogic, assessments })}
-                    glowType={cardGlow}
-                    className="flex flex-col justify-between min-h-[190px] cursor-pointer relative overflow-hidden group border border-slate-100 select-none !p-5 sm:!p-6 bg-gradient-to-b from-white to-slate-50/35 hover:-translate-y-1.5 hover:shadow-soft-lg transition-all duration-300 ease-out"
-                  >
-                    {/* Tiny accent strip */}
-                    <div className={`absolute top-0 left-0 right-0 h-1.5 ${accentColor} opacity-70 group-hover:opacity-100 transition-opacity`} />
-
-                    <div>
-                      <div className="flex items-start justify-between gap-3">
-                        {/* Styled Header Info with Category Icon */}
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {getSubjectAvatar(code, name, metrics.percentage)}
-                          <div className="flex-1 min-w-0 text-left">
-                            <h3 className="text-[14px] sm:text-[15px] font-black text-slate-800 group-hover:text-calm-indigo transition-colors leading-snug truncate" title={name}>
-                              {name || 'Untitled Subject'}
-                            </h3>
-                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                              <span className="text-[10px] font-bold text-slate-400 tracking-wide font-mono">
-                                {code || 'NO CODE'}
-                              </span>
-                              <span className="text-slate-300 font-sans text-xs">•</span>
-                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wide border ${statusChipStyle}`}>
-                                {statusLabel}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 shrink-0">
-                          {/* Controls safely aligned inline next to the progress ring */}
-                          <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
-                            <button
-                              onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveSubject({ id, name, code, weightage, selectionLogic, assessments });
-                              }}
-                              className="p-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-100 text-slate-500 hover:text-calm-indigo hover:shadow-sm rounded-lg transition-all cursor-pointer"
-                              title="Edit Marks"
-                            >
-                              <Edit3 size={11} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSubjectToDelete({ id, name });
-                              }}
-                              className="p-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-100 text-slate-400 hover:text-rose-500 hover:bg-rose-50 hover:shadow-sm rounded-lg transition-all cursor-pointer"
-                              title="Delete Subject"
-                            >
-                              <Trash2 size={11} />
-                            </button>
-                          </div>
-                          <CardProgressRing percentage={metrics.percentage} />
-                        </div>
-                      </div>
-
-                      {/* Assessments list overview */}
-                      <div className="flex flex-wrap gap-1.5 mt-3.5 justify-start">
-                        {assessments.slice(0, 3).map((ass, i) => (
-                          <div 
-                            key={ass._id || ass.id || i}
-                            className="text-[10px] font-bold px-2 py-1 rounded bg-slate-50 border border-slate-100 text-slate-500"
-                          >
-                            {ass.name}: {ass.obtainedMarks !== '' ? ass.obtainedMarks : 0}/{ass.totalMarks}
-                          </div>
-                        ))}
-                        {assessments.length > 3 && (
-                          <div className="text-[10px] font-bold px-2 py-1 rounded bg-slate-100 text-slate-600">
-                            +{assessments.length - 3} more
-                          </div>
-                        )}
-                      </div>
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeSidebarIndicator"
+                      className="absolute left-0 top-2 bottom-2 w-1.5 rounded-r-full bg-indigo-200"
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                  <span className={`${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
+                    {item.icon}
+                  </span>
+                  {!sidebarCollapsed && (
+                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      {item.label}
+                    </motion.span>
+                  )}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 bg-slate-900 border border-slate-800 text-white text-[10px] py-1 px-2.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity shadow-lg whitespace-nowrap z-50">
+                      {item.label}
                     </div>
-
-                    {/* Footer Score and Timestamp Summary */}
-                    <div className="mt-6 pt-3 border-t border-slate-100/60 flex items-center justify-between">
-                      <div className="flex flex-col text-left">
-                        <div className="flex items-center gap-1">
-                          <BarChart2 size={12} className="text-slate-400" />
-                          <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Internal Score</span>
-                        </div>
-                        <span className="text-[9px] font-semibold text-slate-400/80 mt-0.5">Updated {timeString}</span>
-                      </div>
-                      <span className="text-base font-black text-slate-800">
-                        {metrics.weightedMarks.toFixed(2)}
-                        <span className="text-xs font-medium text-slate-400 font-sans mx-1">/</span>
-                        <span className="text-xs font-bold text-slate-500">{weightage}</span>
-                      </span>
-                    </div>
-                  </Card>
-                </motion.div>
+                  )}
+                </button>
               );
             })}
-          </AnimatePresence>
-
-          {/* Add Subject Dotted Card placeholder inside the grid */}
-          {totalSubjectsCount > 0 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card
-                onClick={handleOpenCreateModal}
-                className="flex flex-col items-center justify-center min-h-[190px] cursor-pointer border-2 border-dashed border-slate-200 hover:border-indigo-400/50 hover:bg-indigo-50/10 text-slate-400 hover:text-calm-indigo transition-all duration-300 rounded-2xl p-5 select-none text-center bg-transparent group h-full shadow-none hover:shadow-soft-sm"
-              >
-                <div className="h-12 w-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:border-indigo-100 group-hover:text-calm-indigo mb-3 shadow-soft-sm transition-all">
-                  <Plus size={20} strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
-                </div>
-                <span className="text-xs font-black uppercase tracking-wider text-slate-500 group-hover:text-calm-indigo">Add Subject</span>
-                <span className="text-[10px] text-slate-400/80 mt-1 max-w-[150px] font-medium leading-relaxed">Log new subject details & assessment marks</span>
-              </Card>
-            </motion.div>
-          )}
-
-        </section>
-
-        {/* Empty State Design Illustration */}
-        {filteredSubjects.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-12 px-6 bg-white border border-slate-100 rounded-2xl shadow-soft text-center select-none"
-          >
-            <div className="h-20 w-20 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-calm-indigo/80 mb-4 shadow-soft">
-              <BookOpen size={36} />
-            </div>
-            <h3 className="text-base font-bold text-slate-700">No subjects added yet</h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-[280px]">
-              {searchQuery || performanceFilter !== 'all' 
-                ? 'No subjects match your active search or filter rules.' 
-                : 'Click below to create your first subject and calculate CA averages.'
-              }
-            </p>
-            <button
-              onClick={handleOpenCreateModal}
-            className="mt-5 px-5 py-2 bg-calm-indigo hover:bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-soft hover:shadow-soft-glow transition-all cursor-pointer outline-none focus:ring-2 focus:ring-calm-indigo/20 active:scale-95"
-            >
-              {searchQuery || performanceFilter !== 'all' ? 'Clear Filters' : 'Create First Subject'}
-            </button>
-          </motion.div>
-        )}
-
-        {/* Highlighted Warning-Style Disclaimer Card */}
-        <div className="bg-amber-50/50 border border-amber-100 p-5 sm:p-6 rounded-2xl mt-8 text-left shadow-soft select-none">
-          <div className="flex items-start gap-3">
-            <div className="h-7 w-7 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0 mt-0.5">
-              <AlertTriangle size={14} />
-            </div>
-            <div className="space-y-2">
-              <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider">Disclaimer & Usage Agreement</h4>
-              
-              <p className="text-[11px] text-slate-500 leading-relaxed font-bold text-indigo-700">
-                🔒 Privacy Promise: MarkFlow is committed to student data privacy. I do not collect, store, or share any type of personal information or academic data. All calculations and assessment logs stay entirely within your private browser storage.
-              </p>
-              
-              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                MarkFlow is an independently developed academic utility designed to help students estimate their Class Assessment (CA) marks and understand their performance ahead of end-semester examinations.
-              </p>
-              
-              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                While I try to keep calculations accurate, students should always verify marks through their official university or college portal. In case of any difference, official records will be considered final.
-              </p>
-              
-              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                This platform is built solely for educational and self-analysis purposes. It is not affiliated with, endorsed by, or associated with any university, college, or academic institution.
-              </p>
-              
-              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                By using MarkFlow, you acknowledge that all results are estimated calculations only, and the developers bear no responsibility for any academic decisions made based on this application.
-              </p>
-            </div>
-          </div>
+          </nav>
         </div>
 
-      </main>
+        {/* Collapsible toggle footer */}
+        <div className="p-3.5 border-t border-slate-800/60">
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="w-full flex items-center justify-center p-2 rounded-xl bg-slate-800/40 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer text-slate-400 outline-none"
+            title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {sidebarCollapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
+          </button>
+        </div>
+      </aside>
 
-      {/* Floating Action Glassmorphic Icons bottom-right */}
-      <div className="fixed bottom-6 right-6 flex flex-row gap-2 z-40 items-center select-none">
-        
-        {/* Developer Profile Trigger */}
-        <button
-          onClick={() => setShowAbout(true)}
-          className="h-10 px-3.5 rounded-full backdrop-blur-md bg-white/85 hover:bg-white border border-slate-200/60 hover:border-indigo-100 shadow-lg text-slate-600 hover:text-calm-indigo flex items-center gap-2 text-xs font-bold transition-all transition-grow-glow outline-none focus:ring-2 focus:ring-calm-indigo/20 active:scale-95 cursor-pointer"
-          title="Developer Profile"
-        >
-          <Terminal size={14} className="text-calm-indigo" />
-          <span>Developer Profile</span>
-        </button>
-
-        {/* Feedback / Bug Report Trigger */}
-        <button
-          onClick={() => setShowFeedback(true)}
-          className="h-10 px-3.5 rounded-full backdrop-blur-md bg-white/85 hover:bg-white border border-slate-200/60 hover:border-indigo-100 shadow-lg text-slate-600 hover:text-calm-indigo flex items-center gap-2 text-xs font-bold transition-all transition-grow-glow outline-none focus:ring-2 focus:ring-calm-indigo/20 active:scale-95 cursor-pointer"
-          title="Report Bug / Give Feedback"
-        >
-          <MessageSquare size={14} className="text-calm-indigo" />
-          <span>Feedback</span>
-        </button>
-
-      </div>
-
-      {/* Slide in Subject Detail Modal */}
+      {/* Mobile Drawer Navigation Sidebar */}
       <AnimatePresence>
-        {activeSubject && (
-          <SubjectDetailsPanel
-            subject={activeSubject}
-            onClose={() => setActiveSubject(null)}
-            onSave={handleSaveSubject}
-            onDelete={(id) => {
-              setSubjectToDelete(subjects.find(s => s.id === id || s._id === id));
-            }}
-          />
+        {mobileSidebarOpen && (
+          <div className="fixed inset-0 z-50 md:hidden flex">
+            {/* Backdrop shade */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileSidebarOpen(false)}
+              className="absolute inset-0 bg-slate-900"
+            />
+            {/* Sidebar drawer content */}
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-64 bg-slate-900 border-r border-slate-800 text-slate-400 h-full flex flex-col justify-between"
+            >
+              <div>
+                <div className="p-5 flex items-center justify-between border-b border-slate-800/60 h-16">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center text-white shrink-0">
+                      <GraduationCap size={18} />
+                    </div>
+                    <div className="text-left">
+                      <h1 className="text-sm font-black text-white tracking-tight leading-none">MarkFlow</h1>
+                      <span className="text-[10px] font-bold text-slate-500 mt-1 block font-sans">Academic OS</span>
+                    </div>
+                  </div>
+                  <button onClick={() => setMobileSidebarOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <nav className="p-4 space-y-1.5">
+                  {sidebarItems.map(item => {
+                    const isActive = activePage === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          handlePageChange(item.id);
+                          setMobileSidebarOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all transform hover:translate-x-1.5 duration-250 cursor-pointer relative ${isActive ? 'bg-indigo-600 text-white font-black shadow-lg shadow-indigo-600/15' : 'hover:bg-slate-800/40 hover:text-white'}`}
+                      >
+                        {isActive && (
+                          <div className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-indigo-200" />
+                        )}
+                        <span className={`${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
+                          {item.icon}
+                        </span>
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              <div className="p-4 border-t border-slate-800/60 text-center">
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Designed for Simplicity</span>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
+      {/* Main Core Viewport Container */}
+      <div className="flex-1 flex flex-col min-w-0 md:h-screen overflow-hidden">
+        {/* Sticky Top Header */}
+        <header className="h-16 bg-white/85 backdrop-blur-md border-b border-slate-100 px-4 sm:px-6 flex items-center justify-between shrink-0 select-none z-30 sticky top-0">
+          <div className="flex items-center gap-2.5">
+            {/* Logo for mobile */}
+            <div className="flex md:hidden items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-md">
+                <GraduationCap size={16} />
+              </div>
+              <h1 className="text-xs font-black text-slate-800 tracking-tight leading-none">MarkFlow</h1>
+            </div>
+            
+            <div className="hidden md:flex items-center gap-2">
+              <span className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
+                {sidebarItems.find(i => i.id === activePage)?.label}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {syncing && <RefreshCw size={13} className="animate-spin text-slate-400" />}
+            <SyncStatus isConnected={backendConnected} />
+            
+            <button
+              onClick={() => setShowFeedback(true)}
+              className="flex h-8 px-3.5 rounded-xl border border-slate-200 hover:border-indigo-100 hover:bg-indigo-50/10 text-slate-500 hover:text-indigo-600 items-center gap-1.5 text-[10px] font-black uppercase tracking-wider shadow-soft-sm cursor-pointer outline-none transition-all"
+            >
+              <MessageSquare size={13} />
+              <span>Feedback</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Scrollable Page Body Content */}
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 scrollbar-thin">
+          <div className="max-w-6xl mx-auto pb-24 md:pb-12">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activePage}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+              >
+                {activePage === 'dashboard' && (
+                  <DashboardPage 
+                    subjects={overallAverages}
+                    onNavigate={handlePageChange}
+                    semesters={overallSemesters}
+                  />
+                )}
+                
+                {activePage === 'ca-weightage' && (
+                  <CAWeightagePage 
+                    recentCASessions={recentCASessions}
+                    setCaUnsaved={setCaUnsaved}
+                    onSaveCASession={(session) => {
+                      addRecentCASession(session);
+                      addHistoryItem(
+                        'ca',
+                        'CA Weightage Calculated',
+                        `Quick calculation for ${session.code || 'Unknown'}`
+                      );
+                      addToast('CA Session Saved', 'success');
+                    }}
+                    onNavigateToSubjectWise={handleNavigateToSubjectWiseFromCA}
+                    onDeleteCASession={handleDeleteCASession}
+                    addToast={addToast}
+                  />
+                )}
+                
+                {activePage === 'subject-wise' && (
+                  <SubjectWisePage 
+                    subjects={subjects}
+                    onSaveSubject={handleSaveSubject}
+                    onDeleteSubject={handleDeleteSubject}
+                    handleOpenCreateModal={handleOpenCreateModal}
+                    transferData={caToSubjectTransferData}
+                    clearTransferData={() => setCaToSubjectTransferData(null)}
+                    undoSubject={undoSubject}
+                    undoSubjectTimer={undoSubjectTimer}
+                    onUndoSubjectDelete={handleUndoSubjectDelete}
+                    addToast={addToast}
+                    setSubjectWiseUnsaved={setSubjectWiseUnsaved}
+                  />
+                )}
+
+                {activePage === 'bunk-planner' && (
+                  <BunkPlannerPage 
+                    subjects={subjects}
+                    onSaveSubject={handleSaveSubject}
+                    showAdvanced={showAdvanced}
+                    setShowAdvanced={handleSetShowAdvanced}
+                    targetAttendance={globalTargetAttendance}
+                    setTargetAttendance={setGlobalTargetAttendance}
+                  />
+                )}
+
+                {activePage === 'semester-cgpa' && (
+                  <SemesterCGPAPage 
+                    subjects={subjects}
+                    onUpdateCGPAStatus={handleUpdateSubjectCGPAStatus}
+                    showAdvanced={showAdvanced}
+                    setShowAdvanced={handleSetShowAdvanced}
+                    addToast={addToast}
+                    semesters={overallSemesters}
+                    setSemesters={handleSetSemesters}
+                    setSemesterCGPAUnsaved={setSemesterCGPAUnsaved}
+                  />
+                )}
+
+                {activePage === 'overall-cgpa' && (
+                  <OverallCGPAPage 
+                    currentSemesterSGPA={semesterSGPA}
+                    currentSemesterCredits={semesterCredits}
+                    semesters={overallSemesters}
+                    setSemesters={handleSetSemesters}
+                  />
+                )}
+
+                {activePage === 'analytics' && (
+                  <AnalyticsPage 
+                    subjects={overallAverages}
+                    semesters={overallSemesters}
+                  />
+                )}
+
+                {activePage === 'history' && (
+                  <HistoryPage 
+                    historyList={historyList}
+                    trashList={trashList}
+                    onRestoreTrashItem={handleRestoreTrashItem}
+                    onPermanentDeleteTrashItem={handlePermanentDeleteTrashItem}
+                    onClearTrash={handleClearTrash}
+                    autoDeleteTrash={autoDeleteTrash}
+                    onToggleAutoDeleteTrash={() => setAutoDeleteTrash(!autoDeleteTrash)}
+                    onDeleteItem={(id) => {
+                      const log = historyList.find(h => h.id === id);
+                      const updated = historyList.filter(h => h.id !== id);
+                      setHistoryList(updated);
+                      localStorage.setItem('markflow-history', JSON.stringify(updated));
+                      if (log) {
+                        addToTrash('history_log', `Activity Log: ${log.title}`, log);
+                        addToast(`Activity log deleted. You can restore it from the Trash Bin!`, 'info');
+                      }
+                    }}
+                    onClearAll={() => {
+                      if (historyList.length > 0) {
+                        historyList.forEach(log => {
+                          addToTrash('history_log', `Activity Log: ${log.title}`, log);
+                        });
+                        addToast(`All activity logs deleted. You can restore them from the Trash Bin!`, 'info');
+                      }
+                      setHistoryList([]);
+                      localStorage.setItem('markflow-history', JSON.stringify([]));
+                      localStorage.removeItem('markflow-draft-caCount');
+                      localStorage.removeItem('markflow-draft-totalMarksPerCA');
+                      localStorage.removeItem('markflow-draft-weightage');
+                      localStorage.removeItem('markflow-draft-selectionLogic');
+                      localStorage.removeItem('markflow-draft-assessments');
+                    }}
+                    onTogglePin={(id) => {
+                      const updated = historyList.map(h => h.id === id ? { ...h, pinned: !h.pinned } : h);
+                      setHistoryList(updated);
+                      localStorage.setItem('markflow-history', JSON.stringify(updated));
+                    }}
+                    onRecalculate={(item) => {
+                      if (item.type === 'ca') {
+                        setActivePage('ca-weightage');
+                      } else {
+                        setActivePage('subject-wise');
+                      }
+                    }}
+                    onNavigate={(page) => setActivePage(page)}
+                  />
+                )}
+
+                {activePage === 'formulas' && (
+                  <FormulasGradePage />
+                )}
+
+                {activePage === 'settings' && (
+                  <SettingsPage 
+                    subjects={subjects}
+                    onDeleteAllSubjects={triggerDeleteAllProcess}
+                    overallPercentage={overallPercentage}
+                    totalWeightage={totalWeightage}
+                    maxPossibleWeightage={maxPossibleWeightage}
+                    targetAttendance={globalTargetAttendance}
+                    setTargetAttendance={setGlobalTargetAttendance}
+                  />
+                )}
+
+                {activePage === 'about' && (
+                  <AboutDeveloperPage />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </main>
+      </div>
+
+      {/* Mobile Sticky Bottom Tab Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden backdrop-blur-md bg-slate-950/80 border-t border-slate-800/80 px-4 h-16 flex items-center justify-around select-none">
+        {[
+          { id: 'dashboard', label: 'Dashboard', icon: <Home size={18} /> },
+          { id: 'ca-weightage', label: 'CA Calc', icon: <Calculator size={18} /> },
+          { id: 'subject-wise', label: 'Subject', icon: <GraduationCap size={18} /> },
+          { id: 'bunk-planner', label: 'Bunk Plan', icon: <Calendar size={18} /> },
+          { id: 'settings', label: 'Settings', icon: <Settings size={18} /> }
+        ].map(item => {
+          const isActive = activePage === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handlePageChange(item.id)}
+              className={`flex-1 flex flex-col items-center justify-center h-full min-h-[44px] transition-all cursor-pointer ${
+                isActive ? 'text-indigo-400 font-extrabold scale-105' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span>{item.icon}</span>
+              <span className="text-[9px] mt-1 tracking-wider uppercase font-bold">{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Global Modals & Dialogs */}
+      
       {/* Create Subject Modal Dialog */}
       <AnimatePresence>
         {showCreateModal && (
@@ -994,65 +1207,10 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Usage Disclaimer Agreement Modal overlay */}
+      {/* Feedback Modal Overlay */}
       <AnimatePresence>
-        {showDisclaimerModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowDisclaimerModal(false)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
-            />
-            
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 15 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative z-10 text-left select-none"
-            >
-              <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100">
-                <div className="h-9 w-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
-                  <AlertTriangle size={18} />
-                </div>
-                <div>
-                  <h3 className="text-base font-black text-slate-800 tracking-tight leading-none">Usage Disclaimer</h3>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1 block">Important Agreement</span>
-                </div>
-              </div>
-
-              <div className="space-y-3.5 text-xs text-slate-500 font-medium leading-relaxed max-h-60 overflow-y-auto pr-1">
-                <p>
-                  MarkFlow is an independent academic tool built solely to help students calculate, track, and forecast their Continuous Assessment (CA) standings.
-                </p>
-                <p className="bg-emerald-50 border border-emerald-100 p-2.5 rounded-xl text-emerald-800 text-[11px] font-bold">
-                  🔒 Privacy First: This application does not collect, record, or track any type of personal or academic data. All of your subject records are stored safely, privately, and entirely on your local device.
-                </p>
-                <p>
-                  All estimations are made proportionally based on standard rules. Results are estimates only and should be verified against your official university or college academic portal. Official college records will be considered final.
-                </p>
-                <p>
-                  By clicking <strong>Agree & Continue</strong>, you acknowledge that the developer bears no responsibility for any academic decisions made based on estimations provided by this application.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 mt-6">
-                <button
-                  onClick={() => setShowDisclaimerModal(false)}
-                  className="py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 font-bold text-xs rounded-xl transition-all cursor-pointer text-center"
-                >
-                  Decline
-                </button>
-                <button
-                  onClick={handleAcceptDisclaimer}
-                  className="py-2.5 bg-gradient-to-tr from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-soft hover:shadow-indigo-500/20 transition-all cursor-pointer text-center"
-                >
-                  Agree & Continue
-                </button>
-              </div>
-            </motion.div>
-          </div>
+        {showFeedback && (
+          <FeedbackModal onClose={() => setShowFeedback(false)} />
         )}
       </AnimatePresence>
 
@@ -1092,8 +1250,9 @@ export default function App() {
                 <button
                   onClick={() => {
                     exportToPDF(subjects, { overallPercentage, totalWeightage, maxPossibleWeightage });
+                    addHistoryItem('exports', 'Report Exported (PDF)', 'Continuous assessment data exported as PDF report');
                   }}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 border border-indigo-200 hover:bg-indigo-50/20 text-calm-indigo font-bold text-xs rounded-xl transition-all cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 border border-indigo-200 hover:bg-indigo-50/20 text-indigo-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
                 >
                   <FileText size={14} />
                   <span>Download PDF Report</span>
@@ -1102,6 +1261,7 @@ export default function App() {
                 <button
                   onClick={() => {
                     exportToCSV(subjects, { overallPercentage, totalWeightage, maxPossibleWeightage });
+                    addHistoryItem('exports', 'Report Exported (CSV)', 'Continuous assessment data exported as CSV worksheet');
                   }}
                   className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
                 >
@@ -1129,7 +1289,35 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Confirmation Modal Dialog: Delete Single Card */}
+      {/* Confirmation Modal Dialog: Unsaved Changes Sidebar Exits */}
+      <AnimatePresence>
+        {pendingPage && (
+          <ConfirmationModal
+            isOpen={!!pendingPage}
+            variant="danger"
+            title={
+              activePage === 'ca-weightage' ? "Unsaved CA Marks" :
+              activePage === 'subject-wise' ? "Unsaved Subject Marks" :
+              "Unsaved Semester Records"
+            }
+            message={
+              activePage === 'ca-weightage' ? "You have unsaved CA calculation marks! We highly recommend clicking 'Save & Close' first, otherwise you will lose this data. Are you sure you want to leave?" :
+              activePage === 'subject-wise' ? "You have unsaved subject calculation details! We highly recommend clicking 'Save Subject' first, otherwise you will lose this data. Are you sure you want to leave?" :
+              "You have unsaved semester calculations or sandbox rows configured! We highly recommend clicking 'Save & Close Record' first, otherwise you will lose this data. Are you sure you want to leave?"
+            }
+            confirmText="Leave Page"
+            cancelText="Stay Here"
+            onConfirm={() => {
+              setCaUnsaved(false);
+              setSubjectWiseUnsaved(false);
+              setSemesterCGPAUnsaved(false);
+              setActivePage(pendingPage);
+              setPendingPage(null);
+            }}
+            onClose={() => setPendingPage(null)}
+          />
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {subjectToDelete && (
           <ConfirmationModal
@@ -1157,96 +1345,13 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Developer Profile Drawer Panel */}
+      {/* Usage Disclaimer Agreement Modal overlay */}
       <AnimatePresence>
-        {showAbout && (
-          <DeveloperProfilePanel onClose={() => setShowAbout(false)} />
-        )}
-      </AnimatePresence>
-
-      {/* Floating Action Button (FAB) for mobile viewports */}
-      <div className="fixed bottom-24 right-6 z-40 md:hidden select-none">
-        <AnimatePresence>
-          {showTooltip && (
-            <motion.div
-              initial={{ opacity: 0, y: 15, scale: 0.8 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.8 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="absolute bottom-16 right-0 bg-indigo-600 text-white text-[10px] font-black py-1.5 px-3 rounded-xl shadow-lg shadow-indigo-500/25 whitespace-nowrap border border-indigo-400/30 flex items-center gap-1"
-            >
-              <Terminal size={10} className="animate-pulse" />
-              <span>Developer Profile</span>
-              {/* Tooltip little arrow */}
-              <div className="absolute right-5 -bottom-1 w-2.5 h-2.5 bg-indigo-600 rotate-45 border-r border-b border-indigo-400/30" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <motion.button
-          onClick={() => setShowAbout(true)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="h-12 w-12 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white flex items-center justify-center shadow-xl hover:shadow-indigo-500/30 transition-all border border-indigo-400/20 active:scale-95 cursor-pointer outline-none focus:ring-2 focus:ring-indigo-300 p-0 animate-none"
-          title="Developer Profile"
-        >
-          <div className="flex items-center justify-center h-full w-full">
-            <User size={22} className="shrink-0 stroke-[2.5]" />
-          </div>
-        </motion.button>
-      </div>
-
-      {/* Bottom Navigation for mobile viewports */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/90 backdrop-blur-lg border-t border-slate-100/80 py-3.5 px-8 flex items-center justify-between shadow-[0_-8px_30px_rgb(0,0,0,0.06)] rounded-t-3xl select-none">
-        
-        {/* Dynamic Back / Reset Button */}
-        <button
-          onClick={() => {
-            if (activeSubject) {
-              setActiveSubject(null);
-            } else if (searchQuery || performanceFilter !== 'all') {
-              setSearchQuery('');
-              setPerformanceFilter('all');
-              addToast('Filters reset to default', 'success');
-            } else {
-              addToast('Already on Dashboard', 'success');
-            }
-          }}
-          className="flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600 transition-all duration-200 cursor-pointer group active:scale-95 py-1 px-3 rounded-xl hover:bg-slate-50"
-        >
-          <div className="p-0.5 transition-colors">
-            <ArrowLeft size={18} className="text-slate-400 group-hover:text-indigo-600" />
-          </div>
-          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 font-sans group-hover:text-indigo-600">Back</span>
-        </button>
-
-        {/* Highly Highlighted Add Subject Section Button in the Middle */}
-        <button
-          onClick={handleOpenCreateModal}
-          className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-600 transition-all duration-200 cursor-pointer relative -mt-5 active:scale-95"
-        >
-          <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25 border-2 border-white hover:scale-105 active:scale-95 transition-all">
-            <Plus size={24} className="shrink-0 stroke-[3]" />
-          </div>
-          <span className="text-[9px] font-extrabold uppercase tracking-wider text-indigo-600/90 mt-1 font-sans">Add Subject</span>
-        </button>
-
-        {/* Feedback Section Button */}
-        <button
-          onClick={() => setShowFeedback(true)}
-          className="flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600 transition-all duration-200 cursor-pointer group active:scale-95 py-1 px-3 rounded-xl hover:bg-slate-50"
-        >
-          <div className="p-0.5 transition-colors">
-            <MessageSquare size={18} />
-          </div>
-          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 font-sans group-hover:text-indigo-600">Feedback</span>
-        </button>
-
-      </div>
-
-      {/* Feedback Modal Overlay */}
-      <AnimatePresence>
-        {showFeedback && (
-          <FeedbackModal onClose={() => setShowFeedback(false)} />
+        {showDisclaimerModal && (
+          <DisclaimerModal
+            isOpen={showDisclaimerModal}
+            onAccept={handleAcceptDisclaimer}
+          />
         )}
       </AnimatePresence>
     </div>
