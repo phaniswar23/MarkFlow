@@ -21,15 +21,20 @@ import {
   RefreshCw,
   Download,
   Image,
-  Share2
+  Share2,
+  ChevronDown,
+  ChevronUp,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { exportElement } from '../../utils/exportUtils';
 import { calculateSubjectMarks } from '../../utils/calcEngine';
+import AdvancedFeaturesLockModal from '../AdvancedFeaturesLockModal';
 
-export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToast, showAdvanced, setShowAdvanced, semesters = [], setSemesters, setSemesterCGPAUnsaved }) {
+export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToast, showAdvanced, setShowAdvanced, semesters = [], setSemesters, setSemesterCGPAUnsaved, onNavigateToAbout }) {
   const [activeMode, setActiveMode] = useState('quick'); // 'quick' or 'detailed'
   const quickInputRef = useRef(null);
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -158,6 +163,15 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
     };
     setSavedCalculations([newRecord, ...savedCalculations]);
     setShowSaveModal(false);
+
+    // Clear active form to close the record!
+    setNumSubjects('');
+    setQuickRows([]);
+    setQuickCalculated(false);
+    setDetailedNumSubjects('');
+    setSandboxRows([]);
+    setDetailedCalculated(false);
+
     if (addToast) addToast("Calculation saved successfully!", "success");
   };
 
@@ -201,6 +215,14 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
 
     setSavedCalculations([newRecord, ...savedCalculations]);
     setShowOverallModal(false);
+
+    // Clear active form to close the record!
+    setNumSubjects('');
+    setQuickRows([]);
+    setQuickCalculated(false);
+    setDetailedNumSubjects('');
+    setSandboxRows([]);
+    setDetailedCalculated(false);
 
     // Setup 5-second Undo
     setUndoPayload({
@@ -284,22 +306,21 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
   const [quickRows, setQuickRows] = useState([]);
   const [quickErrors, setQuickErrors] = useState({});
   const [quickCalculated, setQuickCalculated] = useState(false);
+  const [defaultQuickCredits, setDefaultQuickCredits] = useState('3');
 
   // Detailed Mode States
   const [sandboxRows, setSandboxRows] = useState([]);
   const [detailedNumSubjects, setDetailedNumSubjects] = useState('');
   const [detailedCalculated, setDetailedCalculated] = useState(false);
+  const [detailedErrors, setDetailedErrors] = useState({});
 
   useEffect(() => {
     if (setSemesterCGPAUnsaved) {
-      const hasUnsavedData = 
-        (quickRows && quickRows.length > 0) || 
-        (sandboxRows && sandboxRows.length > 0) || 
-        (numSubjects !== undefined && numSubjects !== '') || 
-        (detailedNumSubjects !== undefined && detailedNumSubjects !== '');
-      setSemesterCGPAUnsaved(hasUnsavedData);
+      const hasUnsavedQuickData = quickRows && quickRows.length > 0;
+      const hasUnsavedDetailedData = sandboxRows && sandboxRows.some(r => !r.isDbSubject || r.isEdited);
+      setSemesterCGPAUnsaved(hasUnsavedQuickData || hasUnsavedDetailedData);
     }
-  }, [quickRows, sandboxRows, numSubjects, detailedNumSubjects, setSemesterCGPAUnsaved]);
+  }, [quickRows, sandboxRows, setSemesterCGPAUnsaved]);
 
   useEffect(() => {
     return () => {
@@ -442,7 +463,7 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
         id: Math.random().toString(),
         name: `Course ${i}`,
         code: `C${i}`,
-        credits: '',
+        credits: defaultQuickCredits || '',
         weightage: ''
       });
     }
@@ -503,6 +524,9 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
     }
 
     setQuickCalculated(true);
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 150);
   };
 
   // Detailed Mode Handlers
@@ -528,34 +552,42 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
   const handleDetailedNumSubjectsChange = (numStr) => {
     setDetailedNumSubjects(numStr);
     const n = Math.max(0, parseInt(numStr) || 0);
-    const newRows = [];
-    for (let i = 1; i <= n; i++) {
-      newRows.push({
-        id: 'sandbox_' + i + '_' + Date.now(),
-        name: `Subject ${i}`,
-        code: `SUB${100 + i}`,
-        credits: 3,
-        inputMode: 'marks',
-        grade: 'A',
-        expanded: i === 1,
-        marksData: {
-          attendance: '',
-          attendanceWeight: '',
-          caObt: '',
-          caTot: 30,
-          caWeight: '',
-          midObt: '',
-          midTot: 30,
-          midWeight: '',
-          midApplicable: true,
-          endObt: '',
-          endTot: 100,
-          endWeight: '',
-          endApplicable: true
+    
+    setSandboxRows(prev => {
+      const updated = [...prev];
+      if (updated.length < n) {
+        const startNum = updated.length + 1;
+        for (let i = startNum; i <= n; i++) {
+          updated.push({
+            id: 'sandbox_' + i + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            name: `Subject ${i}`,
+            code: `SUB${100 + i}`,
+            credits: 3,
+            inputMode: 'marks',
+            grade: 'A',
+            expanded: false,
+            marksData: {
+              attendance: '',
+              attendanceWeight: '',
+              caObt: '',
+              caTot: 30,
+              caWeight: '',
+              midObt: '',
+              midTot: 30,
+              midWeight: '',
+              midApplicable: true,
+              endObt: '',
+              endTot: 100,
+              endWeight: '',
+              endApplicable: true
+            }
+          });
         }
-      });
-    }
-    setSandboxRows(newRows);
+      } else if (updated.length > n) {
+        return updated.slice(0, n);
+      }
+      return updated;
+    });
     setDetailedErrors({});
     setDetailedCalculated(false);
   };
@@ -572,11 +604,11 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
             ...row.marksData, 
             [subfield]: val 
           };
-          const updatedRow = { ...row, marksData: updatedMarks };
+          const updatedRow = { ...row, marksData: updatedMarks, isEdited: true };
           updatedRow.grade = calculateSandboxRowGrade(updatedRow);
           return updatedRow;
         } else {
-          const updatedRow = { ...row, [field]: value };
+          const updatedRow = { ...row, [field]: value, isEdited: true };
           if (field === 'credits') {
             updatedRow.credits = parseFloat(value) || 0;
           }
@@ -596,6 +628,62 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
     } else {
       setSandboxRows(sandboxRows.filter(row => row.id !== id));
     }
+  };
+
+  const handleDetailedCalculate = () => {
+    const errs = {};
+    let isValid = true;
+
+    const updatedRows = sandboxRows.map((row) => {
+      const rowErrs = {};
+      if (!row.code || row.code.trim() === '') {
+        rowErrs.code = "Course Code required";
+        isValid = false;
+      }
+      
+      const m = row.marksData || {};
+      if (m.attendance === '' || m.attendance === undefined || m.attendance === null) {
+        rowErrs.attendance = "Attendance marks required";
+        isValid = false;
+      }
+      if (m.caObt === '' || m.caObt === undefined || m.caObt === null) {
+        rowErrs.caObt = "CA marks required";
+        isValid = false;
+      }
+      if (m.midApplicable && (m.midObt === '' || m.midObt === undefined || m.midObt === null)) {
+        rowErrs.midObt = "Midterm marks required";
+        isValid = false;
+      }
+      if (m.endApplicable && (m.endObt === '' || m.endObt === undefined || m.endObt === null)) {
+        rowErrs.endObt = "End Sem marks required";
+        isValid = false;
+      }
+
+      if (Object.keys(rowErrs).length > 0) {
+        errs[row.id] = rowErrs;
+        // Expand any row card that has active validation errors
+        return { ...row, expanded: true };
+      }
+      return row;
+    });
+
+    if (Object.keys(errs).length > 0) {
+      setSandboxRows(updatedRows);
+    }
+
+    setDetailedErrors(errs);
+
+    if (!isValid) {
+      if (addToast) {
+        addToast("Please fill in all required course codes and marks first *", "error");
+      }
+      return;
+    }
+
+    setDetailedCalculated(true);
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 150);
   };
 
 
@@ -741,15 +829,28 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
 
         <div className="flex flex-wrap gap-2 self-start sm:self-center">
           <button
-            onClick={() => setShowAdvanced(!showAdvanced)}
+            onClick={() => {
+              if (showAdvanced) {
+                setShowAdvanced(false);
+              } else {
+                setIsLockModalOpen(true);
+              }
+            }}
             className={`px-4 py-2.5 rounded-xl border font-bold text-xs flex items-center gap-2 transition-all cursor-pointer ${
               showAdvanced 
                 ? 'bg-indigo-50 text-indigo-600 border-indigo-200 shadow-sm animate-pulse-once' 
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-350'
             }`}
           >
-            <Sliders size={12} />
-            {showAdvanced ? 'Disable Advanced Features' : 'Enable Advanced Features'}
+            {showAdvanced ? (
+              <Sliders size={12} className="text-indigo-500 animate-pulse" />
+            ) : (
+              <div className="flex items-center gap-1">
+                <Lock size={11} className="text-amber-500 shrink-0" />
+                <Sliders size={12} className="text-slate-400" />
+              </div>
+            )}
+            <span>{showAdvanced ? 'Disable Advanced Features' : 'Enable Advanced Features'}</span>
           </button>
           <button
             onClick={() => handleExport('pdf')}
@@ -834,18 +935,45 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
                   </button>
                 </div>
 
-                <div className="max-w-xs space-y-1.5">
-                  <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Number of Subjects</label>
-                  <input
-                    ref={quickInputRef}
-                    type="number"
-                    min="1"
-                    max="15"
-                    placeholder="e.g. 5"
-                    value={numSubjects}
-                    onChange={(e) => handleNumSubjectsChange(e.target.value)}
-                    className="w-full px-4 py-3.5 text-xs bg-slate-50 border border-slate-250 rounded-xl outline-none font-bold focus:border-indigo-400 focus:bg-white transition-all text-slate-700 shadow-inner-sm"
-                  />
+                <div className="flex gap-4 items-end flex-wrap">
+                  <div className="max-w-xs space-y-1.5 flex-1 min-w-[120px]">
+                    <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Number of Subjects</label>
+                    <input
+                      ref={quickInputRef}
+                      type="number"
+                      min="1"
+                      max="15"
+                      placeholder="e.g. 5"
+                      value={numSubjects}
+                      onChange={(e) => handleNumSubjectsChange(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-250 rounded-xl outline-none font-bold focus:border-indigo-400 focus:bg-white transition-all text-slate-700 shadow-inner-sm text-xs"
+                    />
+                  </div>
+
+                  <div className="max-w-xs space-y-1.5 flex-1 min-w-[125px]">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Default Credits</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!defaultQuickCredits) return;
+                          setQuickRows(quickRows.map(r => ({ ...r, credits: defaultQuickCredits })));
+                          if (addToast) addToast(`All courses set to ${defaultQuickCredits} credits!`, "success");
+                        }}
+                        className="text-[9px] font-black uppercase text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+                      >
+                        Apply All
+                      </button>
+                    </div>
+                    <input
+                      type="number"
+                      min="1"
+                      max="6"
+                      value={defaultQuickCredits}
+                      onChange={(e) => setDefaultQuickCredits(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-250 rounded-xl outline-none font-bold focus:border-indigo-400 focus:bg-white transition-all text-slate-700 shadow-inner-sm text-xs"
+                    />
+                  </div>
                 </div>
 
                 {quickRows.length > 0 && (
@@ -927,11 +1055,33 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
 
                     <button
                       onClick={handleQuickCalculate}
-                      className="w-full mt-3 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-soft transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 active:scale-95"
+                      className="w-full mt-3 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-soft transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 active:scale-95 animate-fadeIn"
                     >
                       <Sparkles size={13} />
-                      Calculate SGPA
+                      {quickCalculated ? "Recalculate SGPA" : "Calculate SGPA"}
                     </button>
+
+                    {/* Quick Mode Inline Actions - Completely removes the need for students to scroll down! */}
+                    {quickCalculated && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 animate-slideUp">
+                        <button
+                          onClick={handleOpenOverallModal}
+                          className="py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-extrabold text-xs rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 border border-indigo-150 active:scale-95"
+                          title="Add this calculated SGPA to Overall CGPA"
+                        >
+                          <Plus size={13} />
+                          <span>Add to Overall CGPA</span>
+                        </button>
+                        <button
+                          onClick={handleOpenSaveModal}
+                          className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-soft active:scale-95"
+                          title="Save this SGPA record to dashboard library"
+                        >
+                          <CheckCircle2 size={13} />
+                          <span>Save & Close Record</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1004,10 +1154,13 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
                           >
                             
                             {/* Accordion Header / Top Level Fields */}
-                            <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div 
+                              onClick={() => handleDetailedFieldChange(row.id, 'expanded', null, !row.expanded)}
+                              className="flex flex-wrap items-center justify-between gap-4 cursor-pointer select-none"
+                            >
                               
                               {/* Subject Index & Course Code Input */}
-                              <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                              <div className="flex items-center gap-2 flex-1 min-w-[200px]" onClick={(e) => e.stopPropagation()}>
                                 <span className="text-[10px] font-black font-mono px-2.5 py-1 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl shadow-sm shrink-0">
                                   #{index + 1}
                                 </span>
@@ -1016,17 +1169,38 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
                                     type="text"
                                     placeholder="Course Code (Mandatory) *"
                                     value={row.code}
-                                    onChange={(e) => handleDetailedFieldChange(row.id, 'code', null, e.target.value.toUpperCase())}
-                                    className="w-full px-3 py-1.5 text-xs font-mono font-bold uppercase bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-400 focus:bg-white text-slate-700 transition-all shadow-inner-sm"
+                                    onChange={(e) => {
+                                      handleDetailedFieldChange(row.id, 'code', null, e.target.value.toUpperCase());
+                                      if (detailedErrors[row.id]?.code) {
+                                        setDetailedErrors(prev => {
+                                          const next = { ...prev };
+                                          if (next[row.id]) {
+                                            delete next[row.id].code;
+                                            if (Object.keys(next[row.id]).length === 0) delete next[row.id];
+                                          }
+                                          return next;
+                                        });
+                                      }
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className={`w-full px-3 py-1.5 text-xs font-mono font-bold uppercase bg-white border rounded-xl outline-none focus:bg-white text-slate-700 transition-all shadow-inner-sm ${
+                                      detailedErrors[row.id]?.code
+                                        ? 'border-rose-450 ring-2 ring-rose-500/10'
+                                        : 'border-slate-200 focus:border-indigo-400'
+                                    }`}
                                   />
+                                  {detailedErrors[row.id]?.code && (
+                                    <span className="text-[8px] text-rose-500 font-extrabold block mt-0.5">need to be filled *</span>
+                                  )}
                                 </div>
                               </div>
 
                               {/* Credits Dropdown */}
-                              <div className="w-28 shrink-0">
+                              <div className="w-28 shrink-0" onClick={(e) => e.stopPropagation()}>
                                 <select
                                   value={row.credits}
                                   onChange={(e) => handleDetailedFieldChange(row.id, 'credits', null, e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
                                   className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl outline-none font-bold focus:border-indigo-400 text-slate-600 cursor-pointer transition-all"
                                 >
                                   {[1, 2, 3, 4, 5, 6].map(c => (
@@ -1036,7 +1210,7 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
                               </div>
 
                               {/* Resolved Live Grade Indicator Badge */}
-                              <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
                                 {hasExceeded && (
                                   <span className="px-2.5 py-1 rounded-xl text-xs font-black border bg-rose-50 text-rose-600 border-rose-100 shadow-sm animate-pulse flex items-center gap-1">
                                     ⚠️ Exceeds Max
@@ -1055,13 +1229,33 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
                                 {/* Expand/Collapse Trigger */}
                                 <button
                                   type="button"
-                                  onClick={() => handleDetailedFieldChange(row.id, 'expanded', null, !row.expanded)}
-                                  className={`p-1.5 rounded-lg border hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition-all cursor-pointer ${
-                                    row.expanded ? 'bg-indigo-50 border-indigo-100 text-indigo-500' : 'bg-white border-slate-200'
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDetailedFieldChange(row.id, 'expanded', null, !row.expanded);
+                                  }}
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-xl border transition-all cursor-pointer ${
+                                    row.expanded 
+                                      ? 'bg-indigo-50 border-indigo-200 text-indigo-600 shadow-sm' 
+                                      : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-100 shadow-soft-sm'
                                   }`}
-                                  title={row.expanded ? "Collapse Marks Details" : "Expand Marks Details"}
+                                  title={row.expanded ? "Collapse Marks Details" : "Configure Marks Details"}
                                 >
-                                  <Sliders size={13} />
+                                  <Sliders size={12} />
+                                  <span>{row.expanded ? "Hide Marks" : "Configure Marks"}</span>
+                                  {row.expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                                </button>
+
+                                {/* Delete Subject Button */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDetailedRemoveRow(row.id);
+                                  }}
+                                  className="p-1.5 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 rounded-xl transition-all cursor-pointer shadow-soft-sm flex items-center justify-center shrink-0 active:scale-90"
+                                  title="Delete Subject"
+                                >
+                                  <Trash2 size={12} />
                                 </button>
                               </div>
 
@@ -1128,9 +1322,28 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
                                            type="number"
                                            placeholder="e.g. 5"
                                            value={m.attendance}
-                                           onChange={(e) => handleDetailedFieldChange(row.id, null, 'attendance', e.target.value)}
-                                           className="w-full px-2.5 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none font-bold focus:border-indigo-400 text-slate-700 shadow-inner-sm"
+                                           onChange={(e) => {
+                                             handleDetailedFieldChange(row.id, null, 'attendance', e.target.value);
+                                             if (detailedErrors[row.id]?.attendance) {
+                                               setDetailedErrors(prev => {
+                                                 const next = { ...prev };
+                                                 if (next[row.id]) {
+                                                   delete next[row.id].attendance;
+                                                   if (Object.keys(next[row.id]).length === 0) delete next[row.id];
+                                                 }
+                                                 return next;
+                                               });
+                                             }
+                                           }}
+                                           className={`w-full px-2.5 py-2 text-xs bg-white border rounded-xl outline-none font-bold text-slate-700 shadow-inner-sm transition-all ${
+                                             detailedErrors[row.id]?.attendance
+                                               ? 'border-rose-450 ring-2 ring-rose-500/10'
+                                               : 'border-slate-200 focus:border-indigo-400'
+                                           }`}
                                          />
+                                         {detailedErrors[row.id]?.attendance && (
+                                           <span className="text-[8px] text-rose-500 font-extrabold block mt-0.5">need to be filled *</span>
+                                         )}
                                        </div>
                                      </div>
                                    </div>
@@ -1145,9 +1358,28 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
                                            type="number"
                                            placeholder="e.g. 23"
                                            value={m.caObt}
-                                           onChange={(e) => handleDetailedFieldChange(row.id, null, 'caObt', e.target.value)}
-                                           className="w-full px-2.5 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none font-bold focus:border-indigo-400 text-slate-700 shadow-inner-sm"
+                                           onChange={(e) => {
+                                             handleDetailedFieldChange(row.id, null, 'caObt', e.target.value);
+                                             if (detailedErrors[row.id]?.caObt) {
+                                               setDetailedErrors(prev => {
+                                                 const next = { ...prev };
+                                                 if (next[row.id]) {
+                                                   delete next[row.id].caObt;
+                                                   if (Object.keys(next[row.id]).length === 0) delete next[row.id];
+                                                 }
+                                                 return next;
+                                               });
+                                             }
+                                           }}
+                                           className={`w-full px-2.5 py-2 text-xs bg-white border rounded-xl outline-none font-bold text-slate-700 shadow-inner-sm transition-all ${
+                                             detailedErrors[row.id]?.caObt
+                                               ? 'border-rose-450 ring-2 ring-rose-500/10'
+                                               : 'border-slate-200 focus:border-indigo-400'
+                                           }`}
                                          />
+                                         {detailedErrors[row.id]?.caObt && (
+                                           <span className="text-[8px] text-rose-500 font-extrabold block mt-0.5">need to be filled *</span>
+                                         )}
                                        </div>
                                      </div>
                                    </div>
@@ -1176,9 +1408,28 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
                                              type="number"
                                              placeholder="e.g. 18"
                                              value={m.midObt}
-                                             onChange={(e) => handleDetailedFieldChange(row.id, null, 'midObt', e.target.value)}
-                                             className="w-full px-2.5 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none font-bold focus:border-indigo-400 text-slate-700 shadow-inner-sm"
+                                             onChange={(e) => {
+                                               handleDetailedFieldChange(row.id, null, 'midObt', e.target.value);
+                                               if (detailedErrors[row.id]?.midObt) {
+                                                 setDetailedErrors(prev => {
+                                                   const next = { ...prev };
+                                                   if (next[row.id]) {
+                                                     delete next[row.id].midObt;
+                                                     if (Object.keys(next[row.id]).length === 0) delete next[row.id];
+                                                   }
+                                                   return next;
+                                                 });
+                                               }
+                                             }}
+                                             className={`w-full px-2.5 py-2 text-xs bg-white border rounded-xl outline-none font-bold text-slate-700 shadow-inner-sm transition-all ${
+                                               detailedErrors[row.id]?.midObt
+                                                 ? 'border-rose-450 ring-2 ring-rose-500/10'
+                                                 : 'border-slate-200 focus:border-indigo-400'
+                                             }`}
                                            />
+                                           {detailedErrors[row.id]?.midObt && (
+                                             <span className="text-[8px] text-rose-500 font-extrabold block mt-0.5">need to be filled *</span>
+                                           )}
                                          </div>
                                        </div>
                                      )}
@@ -1208,9 +1459,28 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
                                              type="number"
                                              placeholder="e.g. 45"
                                              value={m.endObt}
-                                             onChange={(e) => handleDetailedFieldChange(row.id, null, 'endObt', e.target.value)}
-                                             className="w-full px-2.5 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none font-bold focus:border-indigo-400 text-slate-700 shadow-inner-sm"
+                                             onChange={(e) => {
+                                               handleDetailedFieldChange(row.id, null, 'endObt', e.target.value);
+                                               if (detailedErrors[row.id]?.endObt) {
+                                                 setDetailedErrors(prev => {
+                                                   const next = { ...prev };
+                                                   if (next[row.id]) {
+                                                     delete next[row.id].endObt;
+                                                     if (Object.keys(next[row.id]).length === 0) delete next[row.id];
+                                                   }
+                                                   return next;
+                                                 });
+                                               }
+                                             }}
+                                             className={`w-full px-2.5 py-2 text-xs bg-white border rounded-xl outline-none font-bold text-slate-700 shadow-inner-sm transition-all ${
+                                               detailedErrors[row.id]?.endObt
+                                                 ? 'border-rose-450 ring-2 ring-rose-500/10'
+                                                 : 'border-slate-200 focus:border-indigo-400'
+                                             }`}
                                            />
+                                           {detailedErrors[row.id]?.endObt && (
+                                             <span className="text-[8px] text-rose-500 font-extrabold block mt-0.5">need to be filled *</span>
+                                           )}
                                          </div>
                                        </div>
                                      )}
@@ -1225,13 +1495,45 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
                       })}
                     </div>
  
+                    {/* Detailed validation banner */}
+                    {Object.keys(detailedErrors).length > 0 && (
+                      <div className="p-3.5 bg-rose-50 border border-rose-150 rounded-2xl flex items-start gap-2.5 text-[10px] text-rose-700 font-bold leading-normal animate-shake mt-3">
+                        <AlertCircle size={14} className="shrink-0 text-rose-500 mt-0.5" />
+                        <div>
+                          <span>Some subjects are missing required inputs! Please fill in all <strong>Course Codes</strong> and <strong>Marks</strong> highlighted in red.</span>
+                        </div>
+                      </div>
+                    )}
+
                     <button
-                      onClick={() => setDetailedCalculated(true)}
-                      className="w-full mt-4 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-2xl shadow-soft transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 active:scale-95"
+                      onClick={handleDetailedCalculate}
+                      className="w-full mt-4 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-2xl shadow-soft transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 active:scale-95 animate-fadeIn"
                     >
                       <Sparkles size={13} />
-                      Calculate Detailed SGPA
+                      {detailedCalculated ? "Recalculate Detailed SGPA" : "Calculate Detailed SGPA"}
                     </button>
+
+                    {/* Detailed Mode Inline Actions - Completely removes the need for students to scroll down! */}
+                    {detailedCalculated && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 animate-slideUp">
+                        <button
+                          onClick={handleOpenOverallModal}
+                          className="py-3.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-extrabold text-xs rounded-2xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 border border-indigo-150 active:scale-95"
+                          title="Add this detailed SGPA to Overall CGPA"
+                        >
+                          <Plus size={13} />
+                          <span>Add to Overall CGPA</span>
+                        </button>
+                        <button
+                          onClick={handleOpenSaveModal}
+                          className="py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-2xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-soft active:scale-95"
+                          title="Save this detailed SGPA record to dashboard library"
+                        >
+                          <CheckCircle2 size={13} />
+                          <span>Save & Close Record</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1254,6 +1556,20 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
           {showAdvanced && (
             <div className="space-y-6 animate-slideUp">
               
+              {/* BETA WARNING BANNER */}
+              <div className="p-4 bg-slate-900 border border-dashed border-indigo-500/40 rounded-2xl flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400 shrink-0">
+                  <span className="text-lg">🔒</span>
+                </div>
+                <div className="space-y-0.5 text-left">
+                  <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block">ADVANCED FEATURES UNLOCKED</span>
+                  <h4 className="text-xs font-black text-white tracking-tight">Beta Release Active - Official Release Coming Soon!</h4>
+                  <p className="text-[9px] text-slate-400 leading-normal font-medium">
+                    You have successfully unlocked the premium academic modules! Note that these are running in restricted sandboxed beta mode. The official live native releases will launch shortly.
+                  </p>
+                </div>
+              </div>
+
               {/* DYNAMIC WHAT-IF TARGET SGPA OPTIMIZER */}
               <Card className="!p-6 bg-slate-50/50 border border-slate-100 shadow-soft-sm rounded-3xl space-y-4">
                 <div className="flex items-center gap-2">
@@ -1379,21 +1695,21 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
         </div>
 
         {/* RIGHT COLUMN: SGPA RESULTS PANEL */}
-        <div className="lg:col-span-4 flex flex-col justify-start space-y-6">
-          <Card className="flex flex-col justify-start items-center text-center p-6 bg-gradient-to-b from-white to-slate-50/30 border border-slate-100 shadow-soft-lg rounded-3xl h-fit space-y-6">
-            <div className="space-y-4 w-full flex flex-col items-center py-6">
+        <div className="lg:col-span-4 flex flex-col justify-start space-y-6 lg:sticky lg:top-6 h-fit">
+          <Card className="flex flex-col justify-start items-center text-center p-5 bg-gradient-to-b from-white to-slate-50/30 border border-slate-100 shadow-soft-lg rounded-3xl h-fit space-y-4">
+            <div className="space-y-3 w-full flex flex-col items-center py-2">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Semester Performance Index</span>
               
-              <div className="relative flex items-center justify-center h-32 w-32 rounded-full border-4 border-indigo-50 shadow-soft-sm bg-white select-none">
+              <div className="relative flex items-center justify-center h-28 w-28 rounded-full border-4 border-indigo-50 shadow-soft-sm bg-white select-none">
                 <div className="text-center">
-                  <span className="text-4xl font-black text-indigo-600 tracking-tight">{finalSGPA.toFixed(2)}</span>
-                  <span className="text-[10px] font-extrabold text-slate-400 block uppercase tracking-wider mt-0.5">SGPA</span>
+                  <span className="text-3xl font-black text-indigo-600 tracking-tight">{finalSGPA.toFixed(2)}</span>
+                  <span className="text-[9px] font-extrabold text-slate-400 block uppercase tracking-wider">SGPA</span>
                 </div>
               </div>
 
-              <div className="mt-2 text-center">
+              <div className="mt-1 text-center">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Academic standing</span>
-                <span className={`text-base font-black ${indicatorColor} mt-0.5 block`}>{gpaIndicator}</span>
+                <span className={`text-sm font-black ${indicatorColor} mt-0.5 block`}>{gpaIndicator}</span>
               </div>
             </div>
 
@@ -1427,56 +1743,55 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
                 </span>
               </div>
             </div>
-          </Card>
 
-          {/* Action Card (only if successfully calculated) */}
-          {calculated && (
-            <Card className="!p-5 space-y-4 border border-slate-100 bg-white shadow-soft rounded-3xl w-full">
-              <div>
-                <h4 className="text-xs font-black text-slate-700 flex items-center gap-1.5 uppercase tracking-wider">
-                  <Sparkles size={13} className="text-indigo-500" />
-                  Semester Actions
-                </h4>
-                <p className="text-[9px] text-slate-400 mt-0.5">Persist your calculation or add it to Overall CGPA.</p>
-              </div>
-              <div className="flex flex-col gap-2.5">
-                <button
-                  onClick={handleOpenOverallModal}
-                  className="w-full py-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold text-xs rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5"
-                >
-                  <Plus size={13} />
-                  <span>Add to Overall CGPA</span>
-                </button>
-                
-                <button
-                  onClick={handleOpenSaveModal}
-                  className="w-full py-2.5 bg-slate-50 text-slate-600 hover:bg-slate-100 font-bold text-xs rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 border border-slate-200/50"
-                >
-                  <CheckCircle2 size={13} />
-                  <span>Save & Close Record</span>
-                </button>
+            {/* Action buttons embedded directly inside the Main Card for extreme compact layout */}
+            {calculated && (
+              <div className="w-full pt-4 border-t border-slate-100/60 space-y-3">
+                <div className="text-left mb-1">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles size={11} className="text-indigo-500" />
+                    Semester Actions
+                  </h4>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={handleOpenOverallModal}
+                    className="w-full py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold text-xs rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5"
+                  >
+                    <Plus size={12} />
+                    <span>Add to Overall CGPA</span>
+                  </button>
+                  
+                  <button
+                    onClick={handleOpenSaveModal}
+                    className="w-full py-2 bg-slate-50 text-slate-600 hover:bg-slate-100 font-bold text-xs rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 border border-slate-200/50"
+                  >
+                    <CheckCircle2 size={12} />
+                    <span>Save & Close Record</span>
+                  </button>
 
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  <button
-                    onClick={() => handleExport('pdf')}
-                    className="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-soft active:scale-95"
-                    title="Export Semester Report as PDF"
-                  >
-                    <Download size={13} />
-                    <span>PDF</span>
-                  </button>
-                  <button
-                    onClick={() => handleExport('png')}
-                    className="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-soft active:scale-95"
-                    title="Export Semester View as PNG"
-                  >
-                    <Image size={13} />
-                    <span>PNG</span>
-                  </button>
+                  <div className="grid grid-cols-2 gap-2 mt-0.5">
+                    <button
+                      onClick={() => handleExport('pdf')}
+                      className="py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-soft active:scale-95"
+                      title="Export Semester Report as PDF"
+                    >
+                      <Download size={12} />
+                      <span>PDF</span>
+                    </button>
+                    <button
+                      onClick={() => handleExport('png')}
+                      className="py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-soft active:scale-95"
+                      title="Export Semester View as PNG"
+                    >
+                      <Image size={12} />
+                      <span>PNG</span>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </Card>
-          )}
+            )}
+          </Card>
 
           {/* Saved calculations record deck */}
           {savedCalculations.length > 0 && (
@@ -2213,6 +2528,13 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
         )}
       </AnimatePresence>
 
+      <AdvancedFeaturesLockModal
+        isOpen={isLockModalOpen}
+        onClose={() => setIsLockModalOpen(false)}
+        onUnlockSuccess={() => setShowAdvanced(true)}
+        addToast={addToast}
+        onNavigateToAbout={onNavigateToAbout}
+      />
     </div>
   );
 }

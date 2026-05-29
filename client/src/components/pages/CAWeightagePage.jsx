@@ -27,11 +27,12 @@ export default function CAWeightagePage({
   onSaveCASession, 
   onNavigateToSubjectWise, 
   onDeleteCASession,
-  setCaUnsaved
+  setCaUnsaved,
+  addToast
 }) {
   const [caCount, setCaCount] = useState(() => parseInt(localStorage.getItem('markflow-draft-caCount')) || 3);
-  const [totalMarksPerCA, setTotalMarksPerCA] = useState(() => parseInt(localStorage.getItem('markflow-draft-totalMarksPerCA')) || 30);
-  const [weightage, setWeightage] = useState(() => parseFloat(localStorage.getItem('markflow-draft-weightage')) || 25);
+  const [totalMarksPerCA, setTotalMarksPerCA] = useState(() => localStorage.getItem('markflow-draft-totalMarksPerCA') || '30');
+  const [weightage, setWeightage] = useState(() => localStorage.getItem('markflow-draft-weightage') || '25');
   const [selectionLogic, setSelectionLogic] = useState(() => localStorage.getItem('markflow-draft-selectionLogic') || 'best_2_3');
   const [customBestOfX, setCustomBestOfX] = useState(2);
   const [customBestOfY, setCustomBestOfY] = useState(3);
@@ -106,7 +107,7 @@ export default function CAWeightagePage({
       updated.push({
         name: `CA${i}`,
         obtainedMarks: existing ? existing.obtainedMarks : '',
-        totalMarks: totalMarksPerCA
+        totalMarks: totalMarksPerCA === '' ? '' : totalMarksPerCA
       });
     }
     setAssessments(updated);
@@ -161,19 +162,7 @@ export default function CAWeightagePage({
   };
   const perfStatus = getStatus(results.percentage);
 
-  // End-Term Projections (What-If) math
-  const otherWeightage = 50 - weightage;
-  const otherMarks = otherWeightage > 0 ? (otherWeightage * (results.percentage / 100)) : 0;
-  const currentInternalTotal = results.weightedMarks + otherMarks;
 
-  const neededForO = 90 - currentInternalTotal;
-  const neededFor75 = 75 - currentInternalTotal;
-
-  const targetO = Math.max(0, Math.min(50, neededForO));
-  const target75 = Math.max(0, Math.min(50, neededFor75));
-
-  const isOAchievable = neededForO <= 50;
-  const is75Achievable = neededFor75 <= 50;
 
   const handleAssessmentChange = (index, field, value) => {
     setIsCalculated(false);
@@ -273,8 +262,8 @@ export default function CAWeightagePage({
 
   const loadSavedSession = (session) => {
     setCaCount(session.assessments.length);
-    setTotalMarksPerCA(session.assessments[0]?.totalMarks || 30);
-    setWeightage(session.weightage || 25);
+    setTotalMarksPerCA(String(session.assessments[0]?.totalMarks || 30));
+    setWeightage(String(session.weightage || 25));
     setSelectionLogic(session.selectionLogic || 'best_2_3');
     setAssessments(session.assessments);
     setIsCalculated(true);
@@ -414,7 +403,11 @@ export default function CAWeightagePage({
       }
     } catch (err) {
       console.error('Export Error:', err);
-      alert('Unable to export calculation details.');
+      if (addToast) {
+        addToast('Unable to export calculation details.', 'error');
+      } else {
+        alert('Unable to export calculation details.');
+      }
     } finally {
       document.body.removeChild(element);
     }
@@ -549,7 +542,11 @@ export default function CAWeightagePage({
       triggerAlert('PDF Exported', 'All Recent CA Sessions exported successfully as a unified PDF report.', 'success');
     } catch (err) {
       console.error('All Sessions PDF Generation Error:', err);
-      alert('Unable to generate PDF report.');
+      if (addToast) {
+        addToast('Unable to generate PDF report.', 'error');
+      } else {
+        alert('Unable to generate PDF report.');
+      }
     } finally {
       document.body.removeChild(element);
     }
@@ -594,7 +591,7 @@ export default function CAWeightagePage({
               <input
                 type="number"
                 value={totalMarksPerCA}
-                onChange={(e) => { setIsCalculated(false); setTotalMarksPerCA(parseInt(e.target.value) || 30); }}
+                onChange={(e) => { setIsCalculated(false); setTotalMarksPerCA(e.target.value); }}
                 className="w-full px-3.5 py-3 text-xs bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-800 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/5 transition-all"
               />
             </div>
@@ -606,7 +603,7 @@ export default function CAWeightagePage({
               <input
                 type="number"
                 value={weightage}
-                onChange={(e) => { setIsCalculated(false); setWeightage(parseFloat(e.target.value) || 25); }}
+                onChange={(e) => { setIsCalculated(false); setWeightage(e.target.value); }}
                 className="w-full px-3.5 py-3 text-xs bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-800 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/5 transition-all"
               />
             </div>
@@ -810,50 +807,7 @@ export default function CAWeightagePage({
               </div>
             </Card>
 
-            {/* "What-If" Predictive Exam Target Panel */}
-            <div className="p-5 border rounded-2xl backdrop-blur-md bg-indigo-950/5 border-indigo-100/50 space-y-3.5 text-left">
-              <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-1.5">
-                <span>🎯 "What-If" End-Term Projections</span>
-                <span className="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-[8px] font-bold">End-Term: 50% Weight</span>
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className={`p-3 border rounded-xl flex flex-col justify-between ${
-                  targetO <= 35 
-                    ? 'bg-emerald-50/40 border-emerald-100/50 text-emerald-800' 
-                    : targetO <= 45 
-                      ? 'bg-amber-50/40 border-amber-100/50 text-amber-800' 
-                      : 'bg-rose-50/40 border-rose-100/50 text-rose-800'
-                }`}>
-                  <span className="text-[9px] font-extrabold uppercase tracking-wide opacity-80">Target "O" Grade (90%+)</span>
-                  <span className="text-lg font-black mt-1 font-mono">
-                    {isOAchievable ? `${targetO.toFixed(1)} / 50` : 'Impossible ❌'}
-                  </span>
-                  <p className="text-[9px] font-medium leading-normal mt-1 opacity-90">
-                    {isOAchievable 
-                      ? `Requires scoring ${((targetO/50)*100).toFixed(0)}% in end-sem. ${targetO <= 35 ? 'Highly achievable! 👍' : 'Needs a near-perfect score! ⚡'}`
-                      : 'Mathematically out of reach based on current CA.'}
-                  </p>
-                </div>
 
-                <div className={`p-3 border rounded-xl flex flex-col justify-between ${
-                  target75 <= 35 
-                    ? 'bg-emerald-50/40 border-emerald-100/50 text-emerald-800' 
-                    : target75 <= 45 
-                      ? 'bg-amber-50/40 border-amber-100/50 text-amber-800' 
-                      : 'bg-rose-50/40 border-rose-100/50 text-rose-850'
-                }`}>
-                  <span className="text-[9px] font-extrabold uppercase tracking-wide opacity-80">Safe Zone Target (75%+)</span>
-                  <span className="text-lg font-black mt-1 font-mono">
-                    {is75Achievable ? `${target75.toFixed(1)} / 50` : 'Impossible ❌'}
-                  </span>
-                  <p className="text-[9px] font-medium leading-normal mt-1 opacity-95">
-                    {is75Achievable 
-                      ? `Need ${((target75/50)*100).toFixed(0)}% in end-sem to guarantee safety zone target.`
-                      : 'Focus on clearing current assessments.'}
-                  </p>
-                </div>
-              </div>
-            </div>
 
             {/* HIGH-FIDELITY EXPORTS PANEL */}
             <div className="bg-slate-50 border border-slate-200/60 p-4.5 rounded-2xl flex flex-col gap-3">

@@ -33,6 +33,13 @@
     overscroll-behavior: contain; /* Prevents chrome refresh-on-pull and back/forward swipe gestures */
   }
 
+  button, 
+  [role="button"],
+  select,
+  input[type="submit"] {
+    cursor: pointer !important;
+  }
+
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
@@ -63,3 +70,329 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.4);
 }
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(99, 102, 241, 0.2), 0 0 15px rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.5), 0 0 25px rgba(99, 102, 241, 0.3);
+    border-color: rgba(129, 140, 248, 0.8);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s infinite ease-in-out;
+}
+
+/* Premium Dark Mode Global Overrides */
+html.dark body,
+html.dark div.bg-\[\#f8fafc\],
+html.dark .min-h-screen,
+html.dark .bg-\[\#f8fafc\] {
+  background-color: #0b0f19 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark .bg-white,
+html.dark .bg-white\/85,
+html.dark header.bg-white\/85 {
+  background-color: #111827 !important; /* slate-900 */
+  border-color: #1f2937 !important; /* slate-800 */
+}
+
+html.dark header {
+  background-color: rgba(17, 24, 39, 0.85) !important;
+  border-color: #1f2937 !important;
+}
+
+html.dark header span, 
+html.dark header h1,
+html.dark header button {
+  color: #ffffff !important;
+}
+
+html.dark table th {
+  background-color: #1f2937 !important;
+  color: #9ca3af !important;
+  border-color: #374151 !important;
+}
+
+html.dark table td,
+html.dark table tr {
+  color: #cbd5e1 !important;
+  border-color: #1f2937 !important;
+}
+
+html.dark input, 
+html.dark select, 
+html.dark textarea {
+  background-color: #1f2937 !important;
+  color: #ffffff !important;
+  border-color: #374151 !important;
+}
+
+html.dark .text-slate-800,
+html.dark .text-slate-700,
+html.dark .text-slate-850,
+html.dark .text-slate-650 {
+  color: #f3f4f6 !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #9ca3af !important;
+}
+
+html.dark .border-slate-100,
+html.dark .border-slate-200 {
+  border-color: #1f2937 !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-900 {
+  background-color: #1f2937 !important;
+}
+
+html.dark .bg-slate-950\/80 {
+  background-color: rgba(17, 24, 39, 0.95) !important;
+}
+
+html.dark p,
+html.dark span {
+  color: inherit;
+}
+
+/* Card Gradient and Text Contrast Fixes */
+html.dark .from-white {
+  background-image: none !important;
+  background-color: #111827 !important;
+}
+
+html.dark .text-slate-800 {
+  color: #f3f4f6 !important;
+}
+
+html.dark .bg-blue-50\/50,
+html.dark .bg-indigo-50\/50,
+html.dark .bg-emerald-50\/50,
+html.dark .bg-rose-50\/50,
+html.dark .bg-teal-50\/20,
+html.dark .bg-teal-50\/15,
+html.dark .bg-indigo-50\/20 {
+  background-color: rgba(99, 102, 241, 0.08) !important;
+  border-color: rgba(99, 102, 241, 0.15) !important;
+}
+
+html.dark .bg-amber-50\/20 {
+  background-color: rgba(245, 158, 11, 0.08) !important;
+  border-color: rgba(245, 158, 11, 0.15) !important;
+}
+
+html.dark .bg-rose-50\/20 {
+  background-color: rgba(244, 63, 94, 0.08) !important;
+  border-color: rgba(244, 63, 94, 0.15) !important;
+}
+
+/* Premium Transitions Disabler */
+html.no-transitions *,
+html.no-transitions *:before,
+html.no-transitions *:after {
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+/* 12+ Color Accent Themes Overrides */
+html {
+  --color-brand-light: #eef2ff;
+  --color-brand-border: #e0e7ff;
+  --color-brand-medium: #6366f1;
+  --color-brand-main: #4f46e5;
+  --color-brand-dark: #3730a3;
+  --color-brand-shadow: rgba(99, 102, 241, 0.15);
+}
+
+html.theme-indigo {
+  --color-brand-light: #eef2ff;
+  --color-brand-border: #e0e7ff;
+  --color-brand-medium: #6366f1;
+  --color-brand-main: #4f46e5;
+  --color-brand-dark: #3730a3;
+  --color-brand-shadow: rgba(99, 102, 241, 0.15);
+}
+
+html.theme-emerald {
+  --color-brand-light: #ecfdf5;
+  --color-brand-border: #d1fae5;
+  --color-brand-medium: #10b981;
+  --color-brand-main: #059669;
+  --color-brand-dark: #047857;
+  --color-brand-shadow: rgba(16, 185, 129, 0.15);
+}
+
+html.theme-red {
+  --color-brand-light: #fef2f2;
+  --color-brand-border: #fee2e2;
+  --color-brand-medium: #ef4444;
+  --color-brand-main: #dc2626;
+  --color-brand-dark: #b91c1c;
+  --color-brand-shadow: rgba(220, 38, 38, 0.15);
+}
+
+html.theme-violet {
+  --color-brand-light: #f5f3ff;
+  --color-brand-border: #ede9fe;
+  --color-brand-medium: #8b5cf6;
+  --color-brand-main: #7c3aed;
+  --color-brand-dark: #6d28d9;
+  --color-brand-shadow: rgba(124, 58, 237, 0.15);
+}
+
+html.theme-blue {
+  --color-brand-light: #eff6ff;
+  --color-brand-border: #dbeafe;
+  --color-brand-medium: #3b82f6;
+  --color-brand-main: #2563eb;
+  --color-brand-dark: #1d4ed8;
+  --color-brand-shadow: rgba(37, 99, 235, 0.15);
+}
+
+html.theme-teal {
+  --color-brand-light: #f0fdfa;
+  --color-brand-border: #ccfbf1;
+  --color-brand-medium: #14b8a6;
+  --color-brand-main: #0d9488;
+  --color-brand-dark: #0f766e;
+  --color-brand-shadow: rgba(13, 148, 136, 0.15);
+}
+
+html.theme-orange {
+  --color-brand-light: #fff7ed;
+  --color-brand-border: #ffedd5;
+  --color-brand-medium: #f97316;
+  --color-brand-main: #ea580c;
+  --color-brand-dark: #c2410c;
+  --color-brand-shadow: rgba(234, 88, 12, 0.15);
+}
+
+html.theme-pink {
+  --color-brand-light: #fdf2f8;
+  --color-brand-border: #fce7f3;
+  --color-brand-medium: #ec4899;
+  --color-brand-main: #db2777;
+  --color-brand-dark: #be185d;
+  --color-brand-shadow: rgba(219, 39, 119, 0.15);
+}
+
+html.theme-amber {
+  --color-brand-light: #fffbeb;
+  --color-brand-border: #fef3c7;
+  --color-brand-medium: #f59e0b;
+  --color-brand-main: #d97706;
+  --color-brand-dark: #b45309;
+  --color-brand-shadow: rgba(217, 119, 6, 0.15);
+}
+
+html.theme-purple {
+  --color-brand-light: #faf5ff;
+  --color-brand-border: #f3e8ff;
+  --color-brand-medium: #a855f7;
+  --color-brand-main: #9333ea;
+  --color-brand-dark: #7e22ce;
+  --color-brand-shadow: rgba(147, 85, 247, 0.15);
+}
+
+html.theme-rose {
+  --color-brand-light: #fff1f2;
+  --color-brand-border: #ffe4e6;
+  --color-brand-medium: #f43f5e;
+  --color-brand-main: #e11d48;
+  --color-brand-dark: #be123c;
+  --color-brand-shadow: rgba(225, 29, 72, 0.15);
+}
+
+html.theme-cyan {
+  --color-brand-light: #ecfeff;
+  --color-brand-border: #cffafe;
+  --color-brand-medium: #06b6d4;
+  --color-brand-main: #0891b2;
+  --color-brand-dark: #0369a1;
+  --color-brand-shadow: rgba(8, 145, 178, 0.15);
+}
+
+/* Connect dynamic CSS variables globally */
+html[class*="theme-"] .bg-indigo-600,
+html[class*="theme-"] .from-indigo-500,
+html[class*="theme-"] .bg-indigo-500,
+html[class*="theme-"] .bg-indigo-600\/15 {
+  background-color: var(--color-brand-main) !important;
+}
+
+html[class*="theme-"] .from-indigo-500\/15 {
+  --tw-gradient-from: var(--color-brand-shadow) !important;
+}
+
+html[class*="theme-"] .hover\:bg-indigo-500:hover,
+html[class*="theme-"] .hover\:bg-indigo-650:hover,
+html[class*="theme-"] .hover\:bg-indigo-600:hover {
+  background-color: var(--color-brand-main) !important;
+}
+
+html[class*="theme-"] .hover\:bg-indigo-700:hover,
+html[class*="theme-"] .hover\:bg-indigo-500\/10:hover,
+html[class*="theme-"] .hover\:bg-indigo-50\/10:hover {
+  background-color: var(--color-brand-dark) !important;
+}
+
+html[class*="theme-"] .bg-indigo-50,
+html[class*="theme-"] .bg-indigo-50\/60,
+html[class*="theme-"] .bg-indigo-50\/30,
+html[class*="theme-"] .bg-indigo-50\/15,
+html[class*="theme-"] .bg-indigo-50\/10 {
+  background-color: var(--color-brand-light) !important;
+}
+
+html[class*="theme-"] .text-indigo-600,
+html[class*="theme-"] .text-indigo-650,
+html[class*="theme-"] .text-indigo-500,
+html[class*="theme-"] .text-indigo-700,
+html[class*="theme-"] .text-indigo-300,
+html[class*="theme-"] .text-indigo-400 {
+  color: var(--color-brand-main) !important;
+}
+
+html[class*="theme-"] .group-hover\:text-indigo-300,
+html[class*="theme-"] .hover\:text-indigo-600:hover {
+  color: var(--color-brand-medium) !important;
+}
+
+html[class*="theme-"] .text-calm-indigo {
+  color: var(--color-brand-medium) !important;
+}
+
+html[class*="theme-"] .border-indigo-100,
+html[class*="theme-"] .border-indigo-100\/50,
+html[class*="theme-"] .border-indigo-500\/30,
+html[class*="theme-"] .border-indigo-400\/20 {
+  border-color: var(--color-brand-border) !important;
+}
+
+/* Sibling Toggle Switch Overrides */
+html[class*="theme-"] .peer:checked ~ .peer-checked\:bg-calm-indigo,
+html[class*="theme-"] .peer:checked ~ .peer-checked\:bg-indigo-600 {
+  background-color: var(--color-brand-main) !important;
+}
+
+html[class*="theme-"] .shadow-indigo-600\/15,
+html[class*="theme-"] .shadow-indigo-600\/20,
+html[class*="theme-"] .shadow-indigo-600\/40,
+html[class*="theme-"] .shadow-lg {
+  --tw-shadow-color: var(--color-brand-shadow) !important;
+  box-shadow: 0 10px 15px -3px var(--color-brand-shadow), 0 4px 6px -4px var(--color-brand-shadow) !important;
+}
+
+
+

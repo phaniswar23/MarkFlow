@@ -195,17 +195,16 @@ export default function SubjectWisePage({
 
   // CA configuration (Step 3)
   const [caApplicable, setCaApplicable] = useState(true);
-  const [caCount, setCaCount] = useState(transferData?.assessments?.length || 3);
+  const [caCount, setCaCount] = useState(transferData?.assessments?.length || 2);
   const [totalMarksPerCA, setTotalMarksPerCA] = useState(transferData?.assessments?.[0]?.totalMarks || 30);
   const [caWeightage, setCaWeightage] = useState(transferData?.weightage || 25);
-  const [selectionLogic, setSelectionLogic] = useState(transferData?.selectionLogic || 'best_2_3');
+  const [selectionLogic, setSelectionLogic] = useState(transferData?.selectionLogic || 'all');
   const [customBestOfX, setCustomBestOfX] = useState(2);
   const [customBestOfY, setCustomBestOfY] = useState(3);
   
   const [assessments, setAssessments] = useState(transferData?.assessments || [
     { name: 'CA1', obtainedMarks: '', totalMarks: 30 },
-    { name: 'CA2', obtainedMarks: '', totalMarks: 30 },
-    { name: 'CA3', obtainedMarks: '', totalMarks: 30 }
+    { name: 'CA2', obtainedMarks: '', totalMarks: 30 }
   ]);
 
   // Midterm (Step 4)
@@ -702,29 +701,46 @@ export default function SubjectWisePage({
     const valErrors = {};
 
     if (activeStep === 1) {
-      if (!subCode.trim()) valErrors.subCode = "Course Code is required";
-      if (!subCredits) valErrors.subCredits = "Credits are required";
+      if (!subCode.trim()) valErrors.subCode = "Course Code need to be filled *";
+      if (!subCredits) valErrors.subCredits = "Credits need to be filled *";
+    } else if (activeStep === 2) {
+      if (attendance === '') {
+        valErrors.attendance = "Attendance Percentage need to be filled *";
+      }
+      if (attendanceWeightage === '') {
+        valErrors.attendanceWeightage = "Attendance Weightage need to be filled *";
+      }
     } else if (activeStep === 3 && caApplicable) {
-      // CA is active, all visible CAs must have marks to continue
+      if (caWeightage === '') {
+        valErrors.caWeightage = "CA Weightage need to be filled *";
+      }
       const emptyIndices = assessments
         .map((a, i) => (a.obtainedMarks === '' ? i : -1))
         .filter(i => i !== -1);
       if (emptyIndices.length > 0) {
-        valErrors.ca = "You must enter obtained marks for all CAs, or disable the CA toggle above if not applicable.";
+        valErrors.ca = "Obtained marks need to be filled *";
         valErrors.emptyCaIndices = emptyIndices;
         addToast("Please fill in obtained marks for all CA fields, or disable the CA toggle above.", "error");
       }
     } else if (activeStep === 4 && midtermApplicable) {
-      // Midterm is active, must enter marks to continue
       if (midtermObtained === '') {
-        valErrors.midterm = "Midterm marks are required. Please enter marks or disable the Midterm toggle above.";
-        addToast("Please enter Midterm exam obtained marks, or disable the Midterm toggle above.", "error");
+        valErrors.midterm = "Obtained marks need to be filled *";
+      }
+      if (midtermTotal === '') {
+        valErrors.midtermTotal = "Total max marks need to be filled *";
+      }
+      if (midtermWeightage === '') {
+        valErrors.midtermWeightage = "Midterm weightage need to be filled *";
       }
     } else if (activeStep === 5 && endSemApplicable) {
-      // End Sem is active, must enter marks to continue
       if (endSemObtained === '') {
-        valErrors.endSem = "End Semester marks are required. Please enter marks or disable the End Sem toggle above.";
-        addToast("Please enter End Semester exam obtained marks, or disable the End Sem toggle above.", "error");
+        valErrors.endSem = "Obtained marks need to be filled *";
+      }
+      if (endSemTotal === '') {
+        valErrors.endSemTotal = "Total max marks need to be filled *";
+      }
+      if (endSemWeightage === '') {
+        valErrors.endSemWeightage = "End Sem weightage need to be filled *";
       }
     }
 
@@ -784,7 +800,7 @@ export default function SubjectWisePage({
   const attPtsResult = (attMultiplier * parseFloat(attendanceWeightage || 0)).toFixed(2);
 
   return (
-    <div id="subject-wise-container" className="text-left select-none relative max-w-7xl mx-auto h-full flex flex-col lg:flex-row gap-8 items-start pb-12 px-4 sm:px-6">
+    <div id="subject-wise-container" className="text-left select-none relative max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 items-start pb-28 lg:pb-12 px-4 sm:px-6">
       
       {/* LEFT COLUMN: CALCULATOR */}
       <div className="flex-1 w-full space-y-6">
@@ -1044,15 +1060,19 @@ export default function SubjectWisePage({
                       min="0"
                       max="100"
                       value={attendance} 
-                      onChange={(e) => { setIsCalculated(false); setAttendance(sanitizeNumericInput(e.target.value)); }} 
+                      onChange={(e) => { 
+                        setIsCalculated(false); 
+                        setAttendance(sanitizeNumericInput(e.target.value)); 
+                        if (errors.attendance) setErrors(prev => ({ ...prev, attendance: null }));
+                      }} 
                       className={`w-full px-3.5 py-3 text-xs bg-slate-50 border rounded-xl outline-none font-bold text-slate-800 transition-all ${
-                        getAttendanceValidationError() ? 'border-rose-300 ring-2 ring-rose-500/5 focus:border-rose-400' : 'border-slate-200 focus:border-indigo-400 focus:bg-white'
+                        (getAttendanceValidationError() || errors.attendance) ? 'border-rose-300 ring-2 ring-rose-500/5 focus:border-rose-400' : 'border-slate-200 focus:border-indigo-400 focus:bg-white'
                       }`} 
                     />
-                    {getAttendanceValidationError() && (
+                    {(getAttendanceValidationError() || errors.attendance) && (
                       <p className="text-[10px] text-rose-500 font-bold flex items-center gap-1 mt-1">
                         <AlertCircle size={10} />
-                        {getAttendanceValidationError()}
+                        {getAttendanceValidationError() || errors.attendance}
                       </p>
                     )}
                   </div>
@@ -1061,9 +1081,21 @@ export default function SubjectWisePage({
                     <input 
                       type="text" 
                       value={attendanceWeightage} 
-                      onChange={(e) => { setIsCalculated(false); setAttendanceWeightage(sanitizeNumericInput(e.target.value)); }} 
-                      className="w-full px-3.5 py-3 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-800 focus:border-indigo-400 focus:bg-white transition-all" 
+                      onChange={(e) => { 
+                        setIsCalculated(false); 
+                        setAttendanceWeightage(sanitizeNumericInput(e.target.value)); 
+                        if (errors.attendanceWeightage) setErrors(prev => ({ ...prev, attendanceWeightage: null }));
+                      }} 
+                      className={`w-full px-3.5 py-3 text-xs bg-slate-50 border rounded-xl outline-none font-bold text-slate-800 transition-all ${
+                        errors.attendanceWeightage ? 'border-rose-300 ring-2 ring-rose-500/5 focus:border-rose-400' : 'border-slate-200 focus:border-indigo-400 focus:bg-white'
+                      }`} 
                     />
+                    {errors.attendanceWeightage && (
+                      <p className="text-[10px] text-rose-500 font-bold flex items-center gap-1 mt-1">
+                        <AlertCircle size={10} />
+                        {errors.attendanceWeightage}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -1177,9 +1209,21 @@ export default function SubjectWisePage({
                     <input 
                       type="text" 
                       value={caWeightage} 
-                      onChange={(e) => { setIsCalculated(false); setCaWeightage(sanitizeNumericInput(e.target.value)); }} 
-                      className="w-full px-3.5 py-3 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-800 focus:border-indigo-400 focus:bg-white transition-all" 
+                      onChange={(e) => { 
+                        setIsCalculated(false); 
+                        setCaWeightage(sanitizeNumericInput(e.target.value)); 
+                        if (errors.caWeightage) setErrors(prev => ({ ...prev, caWeightage: null }));
+                      }} 
+                      className={`w-full px-3.5 py-3 text-xs bg-slate-50 border rounded-xl outline-none font-bold text-slate-800 focus:border-indigo-400 focus:bg-white transition-all ${
+                        errors.caWeightage ? 'border-rose-400 ring-2 ring-rose-500/5 focus:border-rose-400 bg-rose-50/10' : 'border-slate-200'
+                      }`} 
                     />
+                    {errors.caWeightage && (
+                      <p className="text-[10px] text-rose-500 font-bold flex items-center gap-1 mt-1">
+                        <AlertCircle size={10} />
+                        {errors.caWeightage}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">No. of CAs</label>
@@ -1356,16 +1400,22 @@ export default function SubjectWisePage({
                                 type="text" 
                                 placeholder="30"
                                 value={midtermTotal} 
-                                onChange={(e) => { setIsCalculated(false); setMidtermTotal(sanitizeNumericInput(e.target.value)); }} 
+                                onChange={(e) => { 
+                                  setIsCalculated(false); 
+                                  setMidtermTotal(sanitizeNumericInput(e.target.value)); 
+                                  if (errors.midtermTotal) setErrors(prev => ({ ...prev, midtermTotal: null }));
+                                }} 
                                 onFocus={(e) => e.target.select()}
-                                className="w-full px-3.5 py-3 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-center focus:border-indigo-400 focus:bg-white transition-all" 
+                                className={`w-full px-3.5 py-3 text-xs bg-slate-50 border rounded-xl outline-none font-bold text-center focus:border-indigo-400 focus:bg-white transition-all ${
+                                  errors.midtermTotal ? 'border-rose-400 ring-2 ring-rose-500/5 focus:border-rose-400 bg-rose-50/10' : 'border-slate-200'
+                                }`} 
                               />
                             </div>
                           </div>
-                          {(getMidtermValidationError() || errors.midterm) && (
+                          {(getMidtermValidationError() || errors.midterm || errors.midtermTotal) && (
                             <p className="text-[10px] text-rose-500 font-bold flex items-center gap-1 mt-1 justify-end">
                               <AlertCircle size={10} />
-                              {getMidtermValidationError() || errors.midterm}
+                              {getMidtermValidationError() || errors.midterm || errors.midtermTotal}
                             </p>
                           )}
                         </div>
@@ -1376,9 +1426,21 @@ export default function SubjectWisePage({
                             type="text" 
                             placeholder="20"
                             value={midtermWeightage} 
-                            onChange={(e) => { setIsCalculated(false); setMidtermWeightage(sanitizeNumericInput(e.target.value)); }} 
-                            className="w-full px-3.5 py-3 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold focus:border-indigo-400 focus:bg-white transition-all" 
+                            onChange={(e) => { 
+                              setIsCalculated(false); 
+                              setMidtermWeightage(sanitizeNumericInput(e.target.value)); 
+                              if (errors.midtermWeightage) setErrors(prev => ({ ...prev, midtermWeightage: null }));
+                            }} 
+                            className={`w-full px-3.5 py-3 text-xs bg-slate-50 border rounded-xl outline-none font-bold focus:border-indigo-400 focus:bg-white transition-all ${
+                              errors.midtermWeightage ? 'border-rose-400 ring-2 ring-rose-500/5 focus:border-rose-400 bg-rose-50/10' : 'border-slate-200'
+                            }`} 
                           />
+                          {errors.midtermWeightage && (
+                            <p className="text-[10px] text-rose-500 font-bold flex items-center gap-1 mt-1">
+                              <AlertCircle size={10} />
+                              {errors.midtermWeightage}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -1450,16 +1512,22 @@ export default function SubjectWisePage({
                                 type="text" 
                                 placeholder="100"
                                 value={endSemTotal} 
-                                onChange={(e) => { setIsCalculated(false); setEndSemTotal(sanitizeNumericInput(e.target.value)); }} 
+                                onChange={(e) => { 
+                                  setIsCalculated(false); 
+                                  setEndSemTotal(sanitizeNumericInput(e.target.value)); 
+                                  if (errors.endSemTotal) setErrors(prev => ({ ...prev, endSemTotal: null }));
+                                }} 
                                 onFocus={(e) => e.target.select()}
-                                className="w-full px-3.5 py-3 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-center focus:border-indigo-400 focus:bg-white transition-all" 
+                                className={`w-full px-3.5 py-3 text-xs bg-slate-50 border rounded-xl outline-none font-bold text-center focus:border-indigo-400 focus:bg-white transition-all ${
+                                  errors.endSemTotal ? 'border-rose-400 ring-2 ring-rose-500/5 focus:border-rose-400 bg-rose-50/10' : 'border-slate-200'
+                                }`} 
                               />
                             </div>
                           </div>
-                          {(getEndSemValidationError() || errors.endSem) && (
+                          {(getEndSemValidationError() || errors.endSem || errors.endSemTotal) && (
                             <p className="text-[10px] text-rose-500 font-bold flex items-center gap-1 mt-1 justify-end">
                               <AlertCircle size={10} />
-                              {getEndSemValidationError() || errors.endSem}
+                              {getEndSemValidationError() || errors.endSem || errors.endSemTotal}
                             </p>
                           )}
                         </div>
@@ -1470,9 +1538,21 @@ export default function SubjectWisePage({
                             type="text" 
                             placeholder="50"
                             value={endSemWeightage} 
-                            onChange={(e) => { setIsCalculated(false); setEndSemWeightage(sanitizeNumericInput(e.target.value)); }} 
-                            className="w-full px-3.5 py-3 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold focus:border-indigo-400 focus:bg-white transition-all" 
+                            onChange={(e) => { 
+                              setIsCalculated(false); 
+                              setEndSemWeightage(sanitizeNumericInput(e.target.value)); 
+                              if (errors.endSemWeightage) setErrors(prev => ({ ...prev, endSemWeightage: null }));
+                            }} 
+                            className={`w-full px-3.5 py-3 text-xs bg-slate-50 border rounded-xl outline-none font-bold focus:border-indigo-400 focus:bg-white transition-all ${
+                              errors.endSemWeightage ? 'border-rose-400 ring-2 ring-rose-500/5 focus:border-rose-400 bg-rose-50/10' : 'border-slate-200'
+                            }`} 
                           />
+                          {errors.endSemWeightage && (
+                            <p className="text-[10px] text-rose-500 font-bold flex items-center gap-1 mt-1">
+                              <AlertCircle size={10} />
+                              {errors.endSemWeightage}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -1822,7 +1902,7 @@ export default function SubjectWisePage({
             <p className="text-[10px] text-slate-400 leading-normal max-w-[200px] mx-auto font-medium">Complete calculations on the left and click 'Save Subject' to populate your live dashboard!</p>
           </div>
         ) : (
-          <div className="space-y-3.5 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin pr-1">
+          <div className="space-y-3.5 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto overflow-visible scrollbar-thin pr-1">
             {undoSubject && (
               <Card className="!p-4 border border-rose-100 bg-rose-50/20 shadow-soft-sm relative overflow-hidden flex flex-col justify-center items-center text-center gap-2">
                 <span className="text-[10px] font-black text-rose-500 uppercase tracking-wider animate-pulse flex items-center gap-1">

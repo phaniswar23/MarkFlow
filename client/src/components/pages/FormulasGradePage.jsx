@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Badge } from '../UI';
-import { Sparkles, HelpCircle, ChevronRight, ChevronDown, Award, Shield, AlertTriangle, School } from 'lucide-react';
+import { Sparkles, HelpCircle, ChevronRight, ChevronDown, Award, Shield, AlertTriangle, School, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function FormulasGradePage() {
@@ -52,11 +52,11 @@ export default function FormulasGradePage() {
       <div className="bg-white border border-slate-100 p-6 rounded-2xl shadow-soft">
         <div className="space-y-1">
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <span>Reference & Formulas</span>
+            <span>Formulas & Disclaimers</span>
             <Sparkles size={16} className="text-indigo-400" />
           </h2>
           <p className="text-xs text-slate-500 max-w-lg leading-relaxed">
-            Educational guidelines explaining grading point matrices, attendance safety marks, and mathematical CGPA formulas.
+            Educational guidelines explaining grading point matrices, CGPA formulas, and project responsibility disclaimers.
           </p>
         </div>
       </div>
@@ -217,66 +217,67 @@ export default function FormulasGradePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Section 1: Privacy & Data Handling */}
-          <div className="p-4 rounded-2xl bg-indigo-50/30 border border-indigo-100/50 space-y-3.5">
-            <h4 className="text-xs font-black text-indigo-700 uppercase tracking-wider flex items-center gap-2">
-              <Shield size={14} className="text-indigo-500" />
-              <span>🔒 Privacy & Data Handling</span>
+          {/* Section 1: Student Ownership & Independent Project */}
+          <div className="p-4 rounded-2xl bg-indigo-50/20 border border-indigo-100/50 space-y-3.5">
+            <h4 className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-indigo-700" style={{ color: 'var(--color-brand-medium)' }}>
+              <School size={14} className="text-indigo-550" />
+              <span>🏫 Student Project & Educational Independence</span>
             </h4>
-            <ul className="space-y-2.5 text-xs text-slate-600 font-medium leading-relaxed">
+            <ul className="space-y-2.5 text-xs font-semibold leading-relaxed">
               <li className="flex gap-2">
                 <span className="text-[10px] mt-0.5 text-indigo-500 font-black">⚡</span>
-                <p><strong className="text-slate-800">Zero Data Collection:</strong> MarkFlow does not collect, store, or share any type of personal information or academic data.</p>
+                <p className="text-slate-700 dark:text-slate-300"><strong className="text-slate-900 dark:text-white">Independent Student Project:</strong> I am a university student. This platform is a purely independent, self-developed project that I designed and built because I believed it would be highly useful for fellow students to plan their study routines.</p>
               </li>
               <li className="flex gap-2">
                 <span className="text-[10px] mt-0.5 text-indigo-500 font-black">⚡</span>
-                <p><strong className="text-slate-800">100% Local Storage:</strong> All of your calculated grade averages, subject inputs, and assessment logs stay entirely within your private browser storage.</p>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-[10px] mt-0.5 text-indigo-500 font-black">⚡</span>
-                <p><strong className="text-slate-800">Independent Session:</strong> While the interface features a "MongoDB Synced" badge, the data handling ensures complete user-side privacy, and no details are transmitted to external entities.</p>
+                <p className="text-slate-700 dark:text-slate-300"><strong className="text-slate-900 dark:text-white">No Institutional Ties:</strong> I am not working under, sponsored by, or affiliated with any university, college, or academic institution. This is entirely my own personal project aimed at improving my software thinking and developer capability.</p>
               </li>
             </ul>
           </div>
 
           {/* Section 2: Accuracy & Verification Disclaimer */}
-          <div className="p-4 rounded-2xl bg-amber-50/30 border border-amber-100/50 space-y-3.5">
-            <h4 className="text-xs font-black text-amber-700 uppercase tracking-wider flex items-center gap-2">
+          <div className="p-4 rounded-2xl bg-amber-50/20 border border-amber-100/50 space-y-3.5">
+            <h4 className="text-xs font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-2">
               <AlertTriangle size={14} className="text-amber-500" />
-              <span>⚠️ Accuracy & Verification</span>
+              <span>⚠️ Marks Calculation & Expectation Notice</span>
             </h4>
-            <ul className="space-y-2.5 text-xs text-slate-600 font-medium leading-relaxed">
+            <ul className="space-y-2.5 text-xs font-semibold leading-relaxed">
               <li className="flex gap-2">
                 <span className="text-[10px] mt-0.5 text-amber-500 font-black">⚡</span>
-                <p><strong className="text-slate-800">Estimated Results:</strong> The platform is an academic utility designed to help you estimate your Class Assessment (CA) marks and analyze your performance ahead of end-semester examinations.</p>
+                <p className="text-slate-700 dark:text-slate-300"><strong className="text-slate-900 dark:text-white">Estimation Purposes Only:</strong> The platform is designed to help you estimate your semester SGPA, CGPA targets, and subject-wise grades. It does NOT represent your final official academic results.</p>
               </li>
               <li className="flex gap-2">
                 <span className="text-[10px] mt-0.5 text-amber-500 font-black">⚡</span>
-                <p><strong className="text-slate-800">Official Verification Required:</strong> While the tool attempts to keep calculations accurate, you must always verify your marks through your official university or college portal.</p>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-[10px] mt-0.5 text-amber-500 font-black">⚡</span>
-                <p><strong className="text-slate-800">Final Authority:</strong> In the event of any discrepancy or mismatch between MarkFlow and your institution, official academic records are considered final.</p>
+                <p className="text-slate-700 dark:text-slate-300"><strong className="text-slate-900 dark:text-white">Official Grades May Vary:</strong> Computed results may vary from your official university portal marks. I have tried my absolute best to implement all modules correctly, but you must always verify your marks through your official portal. The developer bears zero responsibility for any decisions made based on this tool.</p>
               </li>
             </ul>
           </div>
 
-          {/* Section 3: Affiliation & Liability */}
-          <div className="p-4 rounded-2xl bg-rose-50/30 border border-rose-100/50 space-y-3.5">
-            <h4 className="text-xs font-black text-rose-750 uppercase tracking-wider flex items-center gap-2">
-              <School size={14} className="text-rose-500" />
-              <span>🏫 Affiliation & Liability</span>
+          {/* Section 3: Privacy & Data Handling */}
+          <div className="p-4 rounded-2xl bg-rose-50/20 border border-rose-100/50 space-y-3.5">
+            <h4 className="text-xs font-black text-rose-750 dark:text-rose-400 uppercase tracking-wider flex items-center gap-2">
+              <Shield size={14} className="text-rose-500" />
+              <span>🔒 Privacy & Data Handling</span>
             </h4>
-            <ul className="space-y-2.5 text-xs text-slate-600 font-medium leading-relaxed">
+            <ul className="space-y-2.5 text-xs font-semibold leading-relaxed">
               <li className="flex gap-2">
                 <span className="text-[10px] mt-0.5 text-rose-500 font-black">⚡</span>
-                <p><strong className="text-slate-800">No Institutional Ties:</strong> This platform is independently developed solely for educational and self-analysis purposes. It is not affiliated with, endorsed by, or associated with any university, college, or academic institution.</p>
+                <p className="text-slate-700 dark:text-slate-300"><strong className="text-slate-900 dark:text-white">Zero Data Harvesting:</strong> MarkFlow does not collect, harvest, sell, or share any personal information or academic data.</p>
               </li>
               <li className="flex gap-2">
                 <span className="text-[10px] mt-0.5 text-rose-500 font-black">⚡</span>
-                <p><strong className="text-slate-800">User Responsibility:</strong> By using the application, you acknowledge that all results are estimated calculations only, and the developers bear no responsibility for any academic decisions you make based on this tool.</p>
+                <p className="text-slate-700 dark:text-slate-300"><strong className="text-slate-900 dark:text-white">100% Local Storage:</strong> All subject records, credit loads, and averages are saved securely on your own device inside your private browser storage.</p>
               </li>
             </ul>
+          </div>
+
+          {/* Highlighted Developer Contact Banner */}
+          <div className="md:col-span-3 p-5 rounded-2xl bg-amber-550/10 border border-amber-500/25 text-amber-600 dark:text-amber-200 flex gap-3 text-xs leading-relaxed font-semibold">
+            <Info size={16} className="text-amber-500 shrink-0 mt-0.5 animate-pulse" />
+            <div>
+              <strong className="block text-amber-800 dark:text-amber-300 font-bold mb-1 uppercase tracking-wide text-[10px]">Report Issues or Share Feedback</strong>
+              If you find any calculation errors, mismatches, or have suggestions to improve the platform, please immediately contact the student developer through the <strong className="underline text-indigo-600 dark:text-indigo-400 cursor-pointer">About Developer</strong> tab or submit a <strong className="underline text-indigo-600 dark:text-indigo-400 cursor-pointer">Feedback</strong> form in the top bar.
+            </div>
           </div>
         </div>
       </Card>

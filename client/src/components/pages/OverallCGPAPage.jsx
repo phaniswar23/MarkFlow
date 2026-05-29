@@ -5,17 +5,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { exportElement } from '../../utils/exportUtils';
 
-export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemesterCredits = 0, semesters, setSemesters }) {
-
+export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemesterCredits = 0, semesters, setSemesters, addToast }) {
   const [targetCGPA, setTargetCGPA] = useState(8.5);
   const [remainingSemesters, setRemainingSemesters] = useState(3);
+  const [defaultCredits, setDefaultCredits] = useState('3');
+  const [isCalculated, setIsCalculated] = useState(false);
+  const containerRef = React.useRef(null);
 
   const handleRowChange = (id, field, value) => {
+    setIsCalculated(false);
     const updated = semesters.map(sem => {
       if (sem.id === id) {
         return {
           ...sem,
-          [field]: parseFloat(value) || 0
+          [field]: value
         };
       }
       return sem;
@@ -24,16 +27,28 @@ export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemest
   };
 
   const handleAddSemester = () => {
+    const nextNum = semesters.length + 1;
     const newSem = {
       id: Math.random().toString(),
-      name: `Semester ${semesters.length + 1}`,
-      sgpa: 8.0,
-      credits: 20
+      name: `Semester ${nextNum}`,
+      sgpa: '',
+      credits: ''
     };
     setSemesters([...semesters, newSem]);
+    setIsCalculated(false);
+
+    // Smooth scroll to the bottom of the container
+    setTimeout(() => {
+      if (containerRef.current) {
+        containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      }
+    }, 100);
+
+    if (addToast) addToast(`Semester ${nextNum} added!`, "success");
   };
 
   const handleRemoveSemester = (id) => {
+    setIsCalculated(false);
     setSemesters(semesters.filter(sem => sem.id !== id));
   };
 
@@ -54,8 +69,8 @@ export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemest
   };
 
   // Calculations
-  const totalCredits = semesters.reduce((sum, s) => sum + (s.credits || 0), 0);
-  const totalCreditPoints = semesters.reduce((sum, s) => sum + ((s.sgpa || 0) * (s.credits || 0)), 0);
+  const totalCredits = semesters.reduce((sum, s) => sum + (parseFloat(s.credits) || 0), 0);
+  const totalCreditPoints = semesters.reduce((sum, s) => sum + ((parseFloat(s.sgpa) || 0) * (parseFloat(s.credits) || 0)), 0);
   
   const finalCGPA = totalCredits > 0 ? (totalCreditPoints / totalCredits) : 0;
 
@@ -66,12 +81,13 @@ export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemest
   let lowestGPA = 11;
 
   semesters.forEach(s => {
-    if (s.sgpa > highestGPA) {
-      highestGPA = s.sgpa;
+    const sgpaVal = parseFloat(s.sgpa) || 0;
+    if (sgpaVal > highestGPA) {
+      highestGPA = sgpaVal;
       bestSem = s;
     }
-    if (s.sgpa < lowestGPA) {
-      lowestGPA = s.sgpa;
+    if (sgpaVal < lowestGPA && sgpaVal > 0) {
+      lowestGPA = sgpaVal;
       worstSem = s;
     }
   });
@@ -87,13 +103,17 @@ export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemest
 
   const chartData = semesters.map(s => ({
     name: s.name,
-    SGPA: s.sgpa,
-    CGPA: Math.round((semesters.filter(item => parseInt(item.name.replace('Semester ', '')) <= parseInt(s.name.replace('Semester ', ''))).reduce((sum, item) => sum + (item.sgpa * item.credits), 0) / semesters.filter(item => parseInt(item.name.replace('Semester ', '')) <= parseInt(s.name.replace('Semester ', ''))).reduce((sum, item) => sum + item.credits, 0)) * 100) / 100
+    SGPA: parseFloat(s.sgpa) || 0,
+    CGPA: Math.round((semesters.filter(item => parseInt(item.name.replace('Semester ', '')) <= parseInt(s.name.replace('Semester ', ''))).reduce((sum, item) => sum + ((parseFloat(item.sgpa) || 0) * (parseFloat(item.credits) || 0)), 0) / semesters.filter(item => parseInt(item.name.replace('Semester ', '')) <= parseInt(s.name.replace('Semester ', ''))).reduce((sum, item) => sum + (parseFloat(item.credits) || 0), 0)) * 100) / 100
   }));
 
   const handleExport = (type) => {
     if (!semesters || semesters.length === 0) {
-      alert("Please add at least one semester with SGPA and Credits before exporting!");
+      if (addToast) {
+        addToast("Please add at least one semester with SGPA and Credits before exporting!", "error");
+      } else {
+        alert("Please add at least one semester with SGPA and Credits before exporting!");
+      }
       return;
     }
     exportElement('overall-cgpa-container', type, `MarkFlow_Overall_CGPA_${new Date().toISOString().slice(0, 10)}`);
@@ -127,14 +147,33 @@ export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemest
               </div>
               
               <div className="flex gap-2 items-center flex-wrap">
-                {currentSemesterSGPA > 0 && (
+                {/* Default Credits Config option */}
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-205 rounded-xl text-[10px]">
+                  <span className="text-[9px] font-black text-slate-400 uppercase">Default Credits:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={defaultCredits}
+                    onChange={(e) => {
+                      setDefaultCredits(e.target.value);
+                      setIsCalculated(false);
+                    }}
+                    className="w-10 text-center font-bold text-slate-700 bg-white border border-slate-200 rounded outline-none p-0.5"
+                  />
                   <button
-                    onClick={handleImportCurrentSemester}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 text-emerald-600 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                    type="button"
+                    onClick={() => {
+                      if (!defaultCredits) return;
+                      setIsCalculated(false);
+                      setSemesters(semesters.map(s => ({ ...s, credits: defaultCredits })));
+                      if (addToast) addToast(`All semesters set to ${defaultCredits} credits!`, "success");
+                    }}
+                    className="ml-1 text-[9px] font-black uppercase text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
                   >
-                    <span>Import Current ({currentSemesterSGPA.toFixed(2)})</span>
+                    Apply All
                   </button>
-                )}
+                </div>
+
                 <button
                   onClick={handleAddSemester}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 text-indigo-600 rounded-xl text-xs font-bold transition-all cursor-pointer"
@@ -161,7 +200,7 @@ export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemest
               </div>
             </div>
 
-            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
+            <div ref={containerRef} className="space-y-3 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
               <AnimatePresence initial={false}>
                 {semesters.map(sem => (
                   <motion.div
@@ -209,6 +248,29 @@ export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemest
                 ))}
               </AnimatePresence>
             </div>
+
+            {semesters.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  // Verify that all rows have both SGPA and Credits entered
+                  const allValid = semesters.every(s => s.sgpa !== undefined && s.sgpa !== '' && s.credits !== undefined && s.credits !== '');
+                  if (!allValid) {
+                    if (addToast) addToast("Please enter a valid SGPA and Credits value for all semesters in the list before calculating!", "error");
+                    return;
+                  }
+                  setIsCalculated(true);
+                  if (addToast) addToast("CGPA calculated successfully!", "success");
+                }}
+                className={`w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all transform hover:scale-[1.01] active:scale-[0.99] shadow-md cursor-pointer mt-4 ${
+                  isCalculated 
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/10' 
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/10'
+                }`}
+              >
+                <span>{isCalculated ? "Recalculate CGPA ⚡" : "Calculate CGPA ⚡"}</span>
+              </button>
+            )}
           </Card>
 
           <Card className="!p-5">
@@ -245,7 +307,7 @@ export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemest
               
               <div className="relative flex items-center justify-center h-28 w-28 rounded-full border-4 border-emerald-50 shadow-soft-sm bg-white select-none">
                 <div className="text-center">
-                  <span className="text-3xl font-black text-emerald-600 tracking-tight">{finalCGPA.toFixed(2)}</span>
+                  <span className="text-3xl font-black text-emerald-600 tracking-tight">{isCalculated ? finalCGPA.toFixed(2) : '--'}</span>
                   <span className="text-[9px] font-extrabold text-slate-400 block uppercase tracking-wider mt-0.5">CGPA</span>
                 </div>
               </div>
@@ -253,11 +315,11 @@ export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemest
               <div className="w-full pt-4 border-t border-slate-100/60 grid grid-cols-2 gap-4 text-left">
                 <div>
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Best Semester</span>
-                  <span className="text-xs font-bold text-slate-800 block truncate mt-0.5">{bestSem ? `${bestSem.name} (${bestSem.sgpa})` : 'N/A'}</span>
+                  <span className="text-xs font-bold text-slate-800 block truncate mt-0.5">{isCalculated && bestSem ? `${bestSem.name} (${parseFloat(bestSem.sgpa).toFixed(2)})` : 'N/A'}</span>
                 </div>
                 <div>
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Completed Credits</span>
-                  <span className="text-xs font-bold text-slate-800 block mt-0.5">{totalCredits} Credits</span>
+                  <span className="text-xs font-bold text-slate-800 block mt-0.5">{isCalculated ? `${totalCredits} Credits` : '0 Credits'}</span>
                 </div>
               </div>
             </div>
@@ -306,7 +368,9 @@ export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemest
                 <div>
                   <span className="text-[9px] font-black text-indigo-600 uppercase tracking-wider">Required GPA Forecast</span>
                   <div className="mt-1">
-                    {requiredGPA > 10 ? (
+                    {!isCalculated ? (
+                      <span className="text-xs font-bold text-slate-500">Please click 'Calculate CGPA' to generate your forecast.</span>
+                    ) : requiredGPA > 10 ? (
                       <span className="text-xs font-extrabold text-rose-500">Mathematical impossibility! Requires &gt;10.00 GPA. Increase remaining semesters or lower target goal.</span>
                     ) : requiredGPA < 0 ? (
                       <span className="text-xs font-bold text-slate-500">Already surpassed! Target met.</span>

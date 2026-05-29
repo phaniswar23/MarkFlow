@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CircularProgress, Badge } from '../UI';
 import { Sparkles, GraduationCap, Award, AlertTriangle, ChevronRight, BarChart2, TrendingUp, Briefcase, BookOpen } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { motion } from 'framer-motion';
 
 export default function DashboardPage({ subjects, onNavigate, semesters = [] }) {
   const totalSubjectsCount = subjects.length;
@@ -306,20 +307,45 @@ export default function DashboardPage({ subjects, onNavigate, semesters = [] }) 
               <span>Subject Performance Trajectory</span>
             </h3>
             {totalSubjectsCount === 0 ? (
-              <div className="h-64 sm:h-80 flex flex-col items-center justify-center text-center p-6 select-none bg-slate-50/20 rounded-2xl border border-dashed border-slate-200/80 relative overflow-hidden">
+              <motion.div 
+                whileHover="hover"
+                className="h-64 sm:h-80 flex flex-col items-center justify-center text-center p-6 select-none bg-slate-50/20 rounded-2xl border border-dashed border-slate-200/80 relative overflow-hidden group cursor-pointer"
+              >
                 {/* Faint Line Chart SVG Skeleton Background */}
-                <div className="absolute inset-0 opacity-[0.04] flex items-center justify-center pointer-events-none">
+                <motion.div 
+                  variants={{
+                    hover: { scale: 1.12, rotate: 1, opacity: 0.12 }
+                  }}
+                  animate={{
+                    y: [0, -8, 0],
+                    x: [0, 5, 0],
+                    rotate: [0, 2, 0]
+                  }}
+                  transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="absolute inset-0 opacity-[0.08] flex items-center justify-center pointer-events-none text-indigo-500"
+                >
                   <svg className="w-full h-full p-4" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1">
-                    <line x1="10" y1="90" x2="90" y2="90" />
-                    <line x1="10" y1="10" x2="10" y2="90" />
-                    <path d="M 10 70 L 30 50 L 50 80 L 70 30 L 90 40" />
-                    <circle cx="10" cy="70" r="2" />
-                    <circle cx="30" cy="50" r="2" />
-                    <circle cx="50" cy="80" r="2" />
-                    <circle cx="70" cy="30" r="2" />
-                    <circle cx="90" cy="40" r="2" />
+                    <line x1="10" y1="90" x2="90" y2="90" strokeDasharray="3 3" />
+                    <line x1="10" y1="10" x2="10" y2="90" strokeDasharray="3 3" />
+                    <motion.path 
+                      d="M 10 70 L 30 50 L 50 80 L 70 30 L 90 40" 
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ duration: 2.5, ease: "easeInOut", repeat: Infinity, repeatDelay: 4 }}
+                    />
+                    <circle cx="10" cy="70" r="2.5" className="fill-indigo-500" />
+                    <circle cx="30" cy="50" r="2.5" className="fill-indigo-500" />
+                    <circle cx="50" cy="80" r="2.5" className="fill-indigo-500" />
+                    <circle cx="70" cy="30" r="2.5" className="fill-indigo-500" />
+                    <circle cx="90" cy="40" r="2.5" className="fill-indigo-500" />
                   </svg>
-                </div>
+                </motion.div>
                 <div className="relative z-10 space-y-1 flex flex-col items-center">
                   <span className="text-xs font-bold text-slate-500">No Performance Trajectory</span>
                   <p className="text-[10px] text-slate-400 max-w-[200px]">Log your subjects in the Subject-wise calculator tab to generate premium charts.</p>
@@ -330,7 +356,7 @@ export default function DashboardPage({ subjects, onNavigate, semesters = [] }) 
                     + Log First Subject
                   </button>
                 </div>
-              </div>
+              </motion.div>
             ) : (
               <div className="h-64 sm:h-80">
                 <ResponsiveContainer width="100%" height="100%">
@@ -358,17 +384,40 @@ export default function DashboardPage({ subjects, onNavigate, semesters = [] }) 
               <span>Grade Distribution</span>
             </h3>
             {totalSubjectsCount === 0 ? (
-              <div className="h-64 sm:h-80 flex flex-col items-center justify-center text-center p-6 select-none bg-slate-50/20 rounded-2xl border border-dashed border-slate-200/80 relative overflow-hidden">
+              <motion.div 
+                whileHover="hover"
+                className="h-64 sm:h-80 flex flex-col items-center justify-center text-center p-6 select-none bg-slate-50/20 rounded-2xl border border-dashed border-slate-200/80 relative overflow-hidden group cursor-pointer"
+              >
                 {/* Faint Donut Chart SVG Skeleton Background */}
-                <div className="absolute inset-0 opacity-[0.06] flex items-center justify-center pointer-events-none">
+                <motion.div 
+                  variants={{
+                    hover: { scale: 1.15, rotate: 15, opacity: 0.12 }
+                  }}
+                  animate={{
+                    y: [0, 5, 0],
+                    x: [0, -3, 0],
+                    rotate: [0, -8, 0]
+                  }}
+                  transition={{
+                    duration: 12,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="absolute inset-0 opacity-[0.06] flex items-center justify-center pointer-events-none text-indigo-500"
+                >
                   <svg className="w-28 h-28" viewBox="0 0 36 36" fill="none" stroke="currentColor">
-                    <circle cx="18" cy="18" r="15.915" strokeWidth="3" strokeDasharray="100" strokeDashoffset="0" opacity="0.2" />
-                    <circle cx="18" cy="18" r="15.915" strokeWidth="3.5" strokeDasharray="35 65" strokeDashoffset="0" />
+                    <circle cx="18" cy="18" r="15.915" strokeWidth="3" strokeDasharray="100" strokeDashoffset="0" opacity="0.15" />
+                    <motion.circle 
+                      cx="18" cy="18" r="15.915" strokeWidth="3.5" strokeDasharray="35 65" strokeDashoffset="0" 
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ duration: 2.2, ease: "easeInOut", repeat: Infinity, repeatDelay: 4 }}
+                    />
                     <circle cx="18" cy="18" r="15.915" strokeWidth="3.5" strokeDasharray="20 80" strokeDashoffset="-35" opacity="0.75" />
                     <circle cx="18" cy="18" r="15.915" strokeWidth="3.5" strokeDasharray="15 85" strokeDashoffset="-55" opacity="0.5" />
                     <circle cx="18" cy="18" r="15.915" strokeWidth="3.5" strokeDasharray="10 90" strokeDashoffset="-70" opacity="0.3" />
                   </svg>
-                </div>
+                </motion.div>
                 <div className="relative z-10 space-y-1 flex flex-col items-center">
                   <span className="text-xs font-bold text-slate-500">No Grades Distributed Yet</span>
                   <p className="text-[10px] text-slate-400 max-w-[200px]">Grades distribution will update dynamically as scores are logged.</p>
@@ -379,7 +428,7 @@ export default function DashboardPage({ subjects, onNavigate, semesters = [] }) 
                     + Log First Subject
                   </button>
                 </div>
-              </div>
+              </motion.div>
             ) : (
               <div className="h-64 sm:h-80">
                 <ResponsiveContainer width="100%" height="100%">
@@ -417,9 +466,21 @@ export default function DashboardPage({ subjects, onNavigate, semesters = [] }) 
                   </div>
                 ) : (
                   <div className="py-2 flex flex-col items-center justify-center text-center p-2 bg-slate-50/20 rounded-xl border border-dashed border-slate-200/80">
-                    <svg className="w-8 h-8 text-slate-300 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                    </svg>
+                    <motion.div
+                      animate={{ 
+                        rotate: [-6, 6, -6],
+                        y: [0, -3, 0]
+                      }}
+                      transition={{
+                        duration: 2.5,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      <svg className="w-8 h-8 text-slate-300 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                      </svg>
+                    </motion.div>
                     <span className="text-[9px] font-bold text-slate-400">No subjects logged.</span>
                   </div>
                 )}
@@ -436,9 +497,21 @@ export default function DashboardPage({ subjects, onNavigate, semesters = [] }) 
                   </div>
                 ) : (
                   <div className="py-2 flex flex-col items-center justify-center text-center p-2 bg-slate-50/20 rounded-xl border border-dashed border-slate-200/80">
-                    <svg className="w-8 h-8 text-slate-300 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                    </svg>
+                    <motion.div
+                      animate={{ 
+                        rotate: [-6, 6, -6],
+                        y: [0, -3, 0]
+                      }}
+                      transition={{
+                        duration: 2.5,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      <svg className="w-8 h-8 text-slate-300 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                      </svg>
+                    </motion.div>
                     <span className="text-[9px] font-bold text-slate-400">No subjects logged.</span>
                   </div>
                 )}
@@ -453,7 +526,19 @@ export default function DashboardPage({ subjects, onNavigate, semesters = [] }) 
               {riskAlerts.length > 0 ? (
                 riskAlerts.map((alert, idx) => (
                   <div key={idx} className="flex gap-2.5 p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-left">
-                    <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                    <motion.div
+                      animate={{ 
+                        scale: [1, 1.15, 1],
+                        rotate: [-8, 8, -8]
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                    </motion.div>
                     <div>
                       <span className="text-[10px] font-black text-slate-700 block leading-tight">{alert.subject} ({alert.code})</span>
                       <p className="text-[9px] text-slate-400 font-medium leading-normal mt-0.5">{alert.message}</p>
@@ -462,9 +547,20 @@ export default function DashboardPage({ subjects, onNavigate, semesters = [] }) 
                 ))
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center p-6 select-none">
-                  <div className="h-10 w-10 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500 mb-2">
+                  <motion.div 
+                    animate={{ 
+                      y: [0, -5, 0],
+                      x: [0, 5, 0]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                    className="h-10 w-10 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500 mb-2"
+                  >
                     <TrendingUp size={16} />
-                  </div>
+                  </motion.div>
                   <span className="text-xs font-bold text-slate-600">All Systems Normal</span>
                   <p className="text-[9px] text-slate-400 mt-0.5 max-w-[150px]">Your credit standings and attendance scores are entirely healthy!</p>
                 </div>

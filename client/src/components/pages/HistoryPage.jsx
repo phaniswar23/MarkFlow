@@ -452,10 +452,22 @@ export default function HistoryPage({
                               <span>Credits: {item.originalData.credits} • Attendance: {item.originalData.attendance}% • CA: {item.originalData.weightage}%</span>
                             )}
                             {item.type === 'ca_session' && (
-                              <span>Logic: {item.originalData.selectionLogic?.replace('_', ' ').replace('_', ' ').toUpperCase()} • Percentage: {item.originalData.caPercentage?.toFixed(1)}%</span>
+                              <span>Logic: {item.originalData.selectionLogic?.replace('_', ' ').replace('_', ' ').toUpperCase()} • Percentage: {
+                                typeof item.originalData.caPercentage === 'number' 
+                                  ? item.originalData.caPercentage.toFixed(1) 
+                                  : isNaN(parseFloat(item.originalData.caPercentage)) 
+                                    ? 'N/A' 
+                                    : parseFloat(item.originalData.caPercentage).toFixed(1)
+                              }%</span>
                             )}
                             {item.type === 'semester' && (
-                              <span>SGPA: {item.originalData.sgpa?.toFixed(2)} • Credits: {item.originalData.credits}</span>
+                              <span>
+                                SGPA: {typeof item.originalData.sgpa === 'number' 
+                                  ? item.originalData.sgpa.toFixed(2) 
+                                  : isNaN(parseFloat(item.originalData.sgpa)) 
+                                    ? 'N/A' 
+                                    : parseFloat(item.originalData.sgpa).toFixed(2)} • Credits: {item.originalData.credits}
+                              </span>
                             )}
                             {item.type === 'history_log' && (
                               <span>Type: {item.originalData.type?.toUpperCase()} • Summary: {item.originalData.summary}</span>

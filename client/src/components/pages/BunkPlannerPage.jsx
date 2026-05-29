@@ -11,10 +11,13 @@ import {
   ChevronRight, 
   Percent, 
   ShieldAlert,
-  Info
+  Info,
+  Lock
 } from 'lucide-react';
+import AdvancedFeaturesLockModal from '../AdvancedFeaturesLockModal';
 
-export default function BunkPlannerPage({ subjects, onSaveSubject, showAdvanced, setShowAdvanced, targetAttendance, setTargetAttendance }) {
+export default function BunkPlannerPage({ subjects, onSaveSubject, showAdvanced, setShowAdvanced, targetAttendance, setTargetAttendance, addToast, onNavigateToAbout }) {
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
   // Timetable state
   const [timetable, setTimetable] = useState(() => {
     const saved = localStorage.getItem('markflow-timetable');
@@ -93,15 +96,28 @@ export default function BunkPlannerPage({ subjects, onSaveSubject, showAdvanced,
         
         {/* ADVANCED TOGGLE SWITCH */}
         <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
+          onClick={() => {
+            if (showAdvanced) {
+              setShowAdvanced(false);
+            } else {
+              setIsLockModalOpen(true);
+            }
+          }}
           className={`px-4 py-2.5 rounded-xl border font-bold text-xs flex items-center gap-2 transition-all cursor-pointer ${
             showAdvanced 
               ? 'bg-indigo-50 text-indigo-600 border-indigo-200 shadow-sm' 
-              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-350'
           }`}
         >
-          <Sliders size={12} />
-          {showAdvanced ? 'Disable Advanced Features' : 'Enable Advanced Features'}
+          {showAdvanced ? (
+            <Sliders size={12} className="text-indigo-500 animate-pulse" />
+          ) : (
+            <div className="flex items-center gap-1">
+              <Lock size={11} className="text-amber-500 shrink-0" />
+              <Sliders size={12} className="text-slate-400" />
+            </div>
+          )}
+          <span>{showAdvanced ? 'Disable Advanced Features' : 'Enable Advanced Features'}</span>
         </button>
       </div>
 
@@ -211,23 +227,23 @@ export default function BunkPlannerPage({ subjects, onSaveSubject, showAdvanced,
             </div>
           </Card>
 
-          {/* ADVANCED PANELS (LOCKED) */}
+          {/* ADVANCED PANELS (LOCKED BUT BETA UNLOCKED) */}
           {showAdvanced && (
-            <Card className="col-span-full !p-6 border-indigo-150 bg-indigo-50/10 shadow-soft-sm rounded-3xl relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-6 border border-dashed border-indigo-300 animate-slideUp">
+            <Card className="col-span-full !p-6 border-indigo-150 bg-slate-900 shadow-soft-sm rounded-3xl relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-6 border border-dashed border-indigo-300 animate-slideUp">
               <div className="flex items-start gap-4 text-left">
-                <div className="h-12 w-12 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 shadow-inner">
+                <div className="h-12 w-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400 shrink-0 shadow-inner">
                   <span className="text-xl">🔒</span>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest block">Premium Advanced Module</span>
-                  <h4 className="text-sm font-black text-slate-800 tracking-tight">Advanced Buffer Simulator & Predictive Analytics</h4>
-                  <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl">
-                    This advanced buffer forecasting and simulator tool is currently under development. To unlock these advanced analysis tools, please contact the developer or check back later!
+                  <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">ADVANCED FEATURES UNLOCKED</span>
+                  <h4 className="text-sm font-black text-white tracking-tight">Advanced Buffer Simulator & Predictive Analytics (Beta Release Soon!)</h4>
+                  <p className="text-xs text-slate-400 font-medium leading-relaxed max-w-2xl">
+                    You have successfully unlocked the Advanced Buffer forecasting simulator! Please note that this is running in a restricted sandbox beta release. Full live database synchronizations will release soon!
                   </p>
                 </div>
               </div>
-              <div className="px-4 py-2 bg-indigo-600/10 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-black uppercase tracking-wider whitespace-nowrap">
-                In Progress ⚡
+              <div className="px-4 py-2 bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 rounded-xl text-xs font-black uppercase tracking-wider whitespace-nowrap animate-pulse">
+                Beta Releases Soon ⚡
               </div>
             </Card>
           )}
@@ -300,27 +316,34 @@ export default function BunkPlannerPage({ subjects, onSaveSubject, showAdvanced,
 
       </div>
 
-      {/* TIMETABLE PREDICTIVE SCHEDULER (LOCKED) */}
+      {/* TIMETABLE PREDICTIVE SCHEDULER (LOCKED BUT BETA UNLOCKED) */}
       {showAdvanced && (
-        <Card className="!p-6 bg-white border border-slate-100 rounded-3xl shadow-soft mt-6 relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-6 border border-dashed border-indigo-300">
+        <Card className="!p-6 bg-slate-900 border border-slate-800 rounded-3xl shadow-soft mt-6 relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-6 border border-dashed border-indigo-300">
           <div className="flex items-start gap-4 text-left">
-            <div className="h-12 w-12 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 shadow-inner">
+            <div className="h-12 w-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 shrink-0 shadow-inner">
               <span className="text-xl">🔒</span>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest block">Premium Advanced Module</span>
-              <h4 className="text-sm font-black text-slate-800 tracking-tight">Timetable Predictive Scheduler</h4>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl">
-                The Timetable Predictive Scheduler is currently under development. Please check back for upcoming semester updates or contact the developer directly to verify integration testing!
+              <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">ADVANCED FEATURES UNLOCKED</span>
+              <h4 className="text-sm font-black text-white tracking-tight">Timetable Predictive Scheduler (Beta Release Soon!)</h4>
+              <p className="text-xs text-slate-400 font-medium leading-relaxed max-w-2xl">
+                The Timetable Predictive Scheduler has been unlocked in preview mode! Please check back for upcoming semester updates or contact the developer directly to verify integration testing!
               </p>
             </div>
           </div>
-          <div className="px-4 py-2 bg-indigo-600/10 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-black uppercase tracking-wider whitespace-nowrap">
-            In Progress ⚡
+          <div className="px-4 py-2 bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 rounded-xl text-xs font-black uppercase tracking-wider whitespace-nowrap animate-pulse">
+            Beta Releases Soon ⚡
           </div>
         </Card>
       )}
 
+      <AdvancedFeaturesLockModal
+        isOpen={isLockModalOpen}
+        onClose={() => setIsLockModalOpen(false)}
+        onUnlockSuccess={() => setShowAdvanced(true)}
+        addToast={addToast}
+        onNavigateToAbout={onNavigateToAbout}
+      />
     </div>
   );
 }

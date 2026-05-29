@@ -14,6 +14,7 @@ import { exportToCSV, exportToPDF } from './utils/exportUtils';
 
 // Modular Subpages
 import DashboardPage from './components/pages/DashboardPage';
+import HowItWorksPage from './components/pages/HowItWorksPage';
 import CAWeightagePage from './components/pages/CAWeightagePage';
 import SubjectWisePage from './components/pages/SubjectWisePage';
 import SemesterCGPAPage from './components/pages/SemesterCGPAPage';
@@ -77,6 +78,19 @@ export default function App() {
       }
     }
   }, [autoDeleteTrash, trashList]);
+
+  // Globally disable mouse wheel scroll numeric value changes on number inputs
+  useEffect(() => {
+    const handleWheel = (e) => {
+      if (e.target && (e.target.type === 'number' || e.target.tagName === 'INPUT' && e.target.getAttribute('type') === 'number')) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      document.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
 
   const addToTrash = (type, title, originalData) => {
     const trashItem = {
@@ -191,10 +205,16 @@ export default function App() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [hasAcceptedDisclaimer, setHasAcceptedDisclaimer] = useState(() => {
-    return localStorage.getItem('markflow_disclaimer_accepted') === 'true';
+    const accepted = localStorage.getItem('markflow_disclaimer_accepted') === 'true';
+    const lastTime = localStorage.getItem('markflow_disclaimer_accepted_time');
+    if (!accepted || !lastTime) return false;
+    return (Date.now() - parseInt(lastTime, 10)) < 24 * 60 * 60 * 1000;
   });
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(() => {
-    return localStorage.getItem('markflow_disclaimer_accepted') !== 'true';
+    const accepted = localStorage.getItem('markflow_disclaimer_accepted') === 'true';
+    const lastTime = localStorage.getItem('markflow_disclaimer_accepted_time');
+    if (!accepted || !lastTime) return true;
+    return (Date.now() - parseInt(lastTime, 10)) >= 24 * 60 * 60 * 1000;
   });
 
   // Router & Navigation states
@@ -222,7 +242,107 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('markflow-target-attendance', globalTargetAttendance);
   }, [globalTargetAttendance]);
-  
+
+  // Global Theme and Transition settings
+  const [themeMode, setThemeMode] = useState(() => localStorage.getItem('markflow-theme') || 'light');
+  const [animationsEnabled, setAnimationsEnabled] = useState(() => localStorage.getItem('markflow-animations') !== 'false');
+
+  useEffect(() => {
+    localStorage.setItem('markflow-theme', themeMode);
+    const root = window.document.documentElement;
+    let activeTheme = themeMode;
+    if (themeMode === 'system') {
+      activeTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    if (activeTheme === 'dark') {
+      root.classList.add('dark');
+      root.style.colorScheme = 'dark';
+    } else {
+      root.classList.remove('dark');
+      root.style.colorScheme = 'light';
+    }
+  }, [themeMode]);
+
+  useEffect(() => {
+    localStorage.setItem('markflow-animations', animationsEnabled ? 'true' : 'false');
+    const root = window.document.documentElement;
+    if (!animationsEnabled) {
+      root.classList.add('no-transitions');
+    } else {
+      root.classList.remove('no-transitions');
+    }
+  }, [animationsEnabled]);
+
+  // Global Brand Color Accent Theme state
+  const [brandColor, setBrandColor] = useState(() => localStorage.getItem('markflow-brand-color') || 'indigo');
+
+  useEffect(() => {
+    localStorage.setItem('markflow-brand-color', brandColor);
+    const root = window.document.documentElement;
+    root.className.split(' ').forEach(cls => {
+      if (cls.startsWith('theme-')) {
+        root.classList.remove(cls);
+      }
+    });
+    root.classList.add(`theme-${brandColor}`);
+  }, [brandColor]);
+
+  // Dynamic Accent-colored Favicon Generator
+  useEffect(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+
+    const colors = {
+      indigo: '#4f46e5',
+      emerald: '#059669',
+      red: '#dc2626',
+      violet: '#7c3aed',
+      blue: '#2563eb',
+      teal: '#0d9488',
+      orange: '#ea580c',
+      pink: '#db2777',
+      amber: '#d97706',
+      purple: '#9333ea',
+      rose: '#e11d48',
+      cyan: '#0891b2'
+    };
+    const color = colors[brandColor] || '#4f46e5';
+
+    // Draw circular canvas background
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(16, 16, 16, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Draw white graduation cap symbol inside favicon
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(16, 8);
+    ctx.lineTo(26, 13);
+    ctx.lineTo(16, 18);
+    ctx.lineTo(6, 13);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(11, 16);
+    ctx.lineTo(11, 20);
+    ctx.quadraticCurveTo(16, 23, 21, 20);
+    ctx.lineTo(21, 16);
+    ctx.closePath();
+    ctx.fill();
+
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.getElementsByTagName('head')[0].appendChild(link);
+    }
+    link.href = canvas.toDataURL();
+  }, [brandColor]);
+
   // Global Advanced Features Toggle state
   const [showAdvanced, setShowAdvanced] = useState(() => {
     return localStorage.getItem('markflow-show-advanced') === 'true';
@@ -288,6 +408,25 @@ export default function App() {
     setToasts((prev) => [...prev, { id, message, type }]);
   };
 
+  const addToastRef = useRef(addToast);
+  useEffect(() => {
+    addToastRef.current = addToast;
+  }, [addToast]);
+
+  useEffect(() => {
+    const originalAlert = window.alert;
+    window.alert = (message) => {
+      if (addToastRef.current) {
+        addToastRef.current(message, 'error');
+      } else {
+        originalAlert(message);
+      }
+    };
+    return () => {
+      window.alert = originalAlert;
+    };
+  }, []);
+
   const removeToast = (id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
@@ -303,6 +442,7 @@ export default function App() {
 
   const handleAcceptDisclaimer = () => {
     localStorage.setItem('markflow_disclaimer_accepted', 'true');
+    localStorage.setItem('markflow_disclaimer_accepted_time', String(Date.now()));
     setHasAcceptedDisclaimer(true);
     setShowDisclaimerModal(false);
     addToast("Disclaimer accepted. Welcome to MarkFlow Academic OS! 🎉", "success");
@@ -766,6 +906,7 @@ export default function App() {
   // Sidebar Navigation list
   const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <Home size={16} /> },
+    { id: 'how-it-works', label: 'How It Works', icon: <Sparkles size={16} />, highlight: true },
     { id: 'ca-weightage', label: 'CA Weightage', icon: <Calculator size={16} /> },
     { id: 'subject-wise', label: 'Subject-wise', icon: <GraduationCap size={16} /> },
     { id: 'bunk-planner', label: 'Bunk Planner', icon: <Calendar size={16} /> },
@@ -773,7 +914,7 @@ export default function App() {
     { id: 'overall-cgpa', label: 'Overall CGPA', icon: <Award size={16} /> },
     { id: 'analytics', label: 'Analytics', icon: <BarChart2 size={16} /> },
     { id: 'history', label: 'History', icon: <Clock size={16} /> },
-    { id: 'formulas', label: 'Formulas & Grades', icon: <HelpCircle size={16} /> },
+    { id: 'formulas', label: 'Formulas & Disclaimers', icon: <HelpCircle size={16} /> },
     { id: 'settings', label: 'Settings', icon: <Settings size={16} /> },
     { id: 'about', label: 'About Developer', icon: <User size={16} /> }
   ];
@@ -832,7 +973,7 @@ export default function App() {
         <div className="flex flex-col">
           {/* Sidebar Brand Header */}
           <div className="p-5 flex items-center gap-3 border-b border-slate-800/60 h-16">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
+            <div className="h-9 w-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-600/20">
               <GraduationCap size={20} />
             </div>
             {!sidebarCollapsed && (
@@ -855,7 +996,8 @@ export default function App() {
                 <button
                   key={item.id}
                   onClick={() => handlePageChange(item.id)}
-                  className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all transform hover:translate-x-1.5 hover:scale-[1.02] group relative cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500/25 ${isActive ? 'bg-indigo-600 text-white font-black shadow-lg shadow-indigo-600/15' : 'hover:bg-slate-800/40 hover:text-white'}`}
+                  className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all transform hover:translate-x-1.5 hover:scale-[1.02] group relative cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500/25 ${isActive ? 'bg-indigo-600 text-white font-black shadow-lg shadow-indigo-600/15' : item.highlight ? 'bg-indigo-950/40 text-indigo-400 border border-indigo-500/30 animate-pulse-glow hover:bg-indigo-900/40 hover:text-white' : 'hover:bg-slate-800/40 hover:text-white'}`}
+                  style={(!isActive && item.highlight) ? { color: '#818cf8', borderColor: 'rgba(99, 102, 241, 0.4)' } : {}}
                 >
                   {isActive && (
                     <motion.div
@@ -864,12 +1006,23 @@ export default function App() {
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
                   )}
-                  <span className={`${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
+                  <span 
+                    className={`${isActive ? 'text-white' : item.highlight ? 'text-indigo-400 group-hover:text-indigo-300' : 'text-slate-400 group-hover:text-white'}`}
+                    style={(!isActive && item.highlight) ? { color: '#818cf8' } : {}}
+                  >
                     {item.icon}
                   </span>
                   {!sidebarCollapsed && (
-                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                      {item.label}
+                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between w-full">
+                      <span>{item.label}</span>
+                      {item.highlight && (
+                        <strong 
+                          className="text-[8px] font-black uppercase tracking-wider bg-indigo-500 text-white px-1.5 py-0.5 rounded-md animate-pulse"
+                          style={{ backgroundColor: '#6366f1', color: '#ffffff' }}
+                        >
+                          Guide
+                        </strong>
+                      )}
                     </motion.span>
                   )}
                   {sidebarCollapsed && (
@@ -918,7 +1071,7 @@ export default function App() {
               <div>
                 <div className="p-5 flex items-center justify-between border-b border-slate-800/60 h-16">
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center text-white shrink-0">
+                    <div className="h-9 w-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0">
                       <GraduationCap size={18} />
                     </div>
                     <div className="text-left">
@@ -941,15 +1094,29 @@ export default function App() {
                           handlePageChange(item.id);
                           setMobileSidebarOpen(false);
                         }}
-                        className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all transform hover:translate-x-1.5 duration-250 cursor-pointer relative ${isActive ? 'bg-indigo-600 text-white font-black shadow-lg shadow-indigo-600/15' : 'hover:bg-slate-800/40 hover:text-white'}`}
+                        className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all transform hover:translate-x-1.5 duration-250 cursor-pointer relative ${isActive ? 'bg-indigo-600 text-white font-black shadow-lg shadow-indigo-600/15' : item.highlight ? 'bg-indigo-950/40 text-indigo-400 border border-indigo-500/30 animate-pulse-glow hover:bg-indigo-900/40 hover:text-white' : 'hover:bg-slate-800/40 hover:text-white'}`}
+                        style={(!isActive && item.highlight) ? { color: '#818cf8', borderColor: 'rgba(99, 102, 241, 0.4)' } : {}}
                       >
                         {isActive && (
                           <div className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-indigo-200" />
                         )}
-                        <span className={`${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
+                        <span 
+                          className={`${isActive ? 'text-white' : item.highlight ? 'text-indigo-400' : 'text-slate-400 group-hover:text-white'}`}
+                          style={(!isActive && item.highlight) ? { color: '#818cf8' } : {}}
+                        >
                           {item.icon}
                         </span>
-                        <span>{item.label}</span>
+                        <span className="flex items-center justify-between w-full">
+                          <span>{item.label}</span>
+                          {item.highlight && (
+                            <strong 
+                              className="text-[8px] font-black uppercase tracking-wider bg-indigo-500 text-white px-1.5 py-0.5 rounded-md animate-pulse"
+                              style={{ backgroundColor: '#6366f1', color: '#ffffff' }}
+                            >
+                              Guide
+                            </strong>
+                          )}
+                        </span>
                       </button>
                     );
                   })}
@@ -971,7 +1138,7 @@ export default function App() {
           <div className="flex items-center gap-2.5">
             {/* Logo for mobile */}
             <div className="flex md:hidden items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-md">
+              <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0 shadow-md">
                 <GraduationCap size={16} />
               </div>
               <h1 className="text-xs font-black text-slate-800 tracking-tight leading-none">MarkFlow</h1>
@@ -1017,6 +1184,10 @@ export default function App() {
                   />
                 )}
                 
+                {activePage === 'how-it-works' && (
+                  <HowItWorksPage />
+                )}
+                
                 {activePage === 'ca-weightage' && (
                   <CAWeightagePage 
                     recentCASessions={recentCASessions}
@@ -1060,6 +1231,8 @@ export default function App() {
                     setShowAdvanced={handleSetShowAdvanced}
                     targetAttendance={globalTargetAttendance}
                     setTargetAttendance={setGlobalTargetAttendance}
+                    addToast={addToast}
+                    onNavigateToAbout={() => handlePageChange('about')}
                   />
                 )}
 
@@ -1073,6 +1246,7 @@ export default function App() {
                     semesters={overallSemesters}
                     setSemesters={handleSetSemesters}
                     setSemesterCGPAUnsaved={setSemesterCGPAUnsaved}
+                    onNavigateToAbout={() => handlePageChange('about')}
                   />
                 )}
 
@@ -1082,6 +1256,7 @@ export default function App() {
                     currentSemesterCredits={semesterCredits}
                     semesters={overallSemesters}
                     setSemesters={handleSetSemesters}
+                    addToast={addToast}
                   />
                 )}
 
@@ -1155,6 +1330,13 @@ export default function App() {
                     maxPossibleWeightage={maxPossibleWeightage}
                     targetAttendance={globalTargetAttendance}
                     setTargetAttendance={setGlobalTargetAttendance}
+                    themeMode={themeMode}
+                    setThemeMode={setThemeMode}
+                    animationsEnabled={animationsEnabled}
+                    setAnimationsEnabled={setAnimationsEnabled}
+                    brandColor={brandColor}
+                    setBrandColor={setBrandColor}
+                    addToast={addToast}
                   />
                 )}
 
@@ -1168,28 +1350,28 @@ export default function App() {
       </div>
 
       {/* Mobile Sticky Bottom Tab Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden backdrop-blur-md bg-slate-950/80 border-t border-slate-800/80 px-4 h-16 flex items-center justify-around select-none">
-        {[
-          { id: 'dashboard', label: 'Dashboard', icon: <Home size={18} /> },
-          { id: 'ca-weightage', label: 'CA Calc', icon: <Calculator size={18} /> },
-          { id: 'subject-wise', label: 'Subject', icon: <GraduationCap size={18} /> },
-          { id: 'bunk-planner', label: 'Bunk Plan', icon: <Calendar size={18} /> },
-          { id: 'settings', label: 'Settings', icon: <Settings size={18} /> }
-        ].map(item => {
-          const isActive = activePage === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => handlePageChange(item.id)}
-              className={`flex-1 flex flex-col items-center justify-center h-full min-h-[44px] transition-all cursor-pointer ${
-                isActive ? 'text-indigo-400 font-extrabold scale-105' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span>{item.icon}</span>
-              <span className="text-[9px] mt-1 tracking-wider uppercase font-bold">{item.label}</span>
-            </button>
-          );
-        })}
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden backdrop-blur-md bg-white/90 dark:bg-slate-950/95 border-t border-slate-200/60 dark:border-slate-800/80 h-16 flex items-center overflow-x-auto scrollbar-none select-none shadow-lg">
+        <div className="flex items-center gap-3.5 px-4 h-full min-w-max">
+          {sidebarItems.map(item => {
+            const isActive = activePage === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handlePageChange(item.id)}
+                className={`flex flex-col items-center justify-center px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
+                  isActive 
+                    ? 'text-indigo-600 dark:text-indigo-400 font-extrabold scale-105 bg-indigo-500/10' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-850/50'
+                }`}
+              >
+                <span className={isActive ? 'text-indigo-600 dark:text-indigo-400 animate-pulse-once' : 'text-slate-400 dark:text-slate-500'}>
+                  {item.icon}
+                </span>
+                <span className="text-[8px] mt-1 tracking-wider uppercase font-extrabold whitespace-nowrap">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Global Modals & Dialogs */}
