@@ -31,7 +31,19 @@ import { exportElement } from '../../utils/exportUtils';
 import { calculateSubjectMarks } from '../../utils/calcEngine';
 import AdvancedFeaturesLockModal from '../AdvancedFeaturesLockModal';
 
-export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToast, showAdvanced, setShowAdvanced, semesters = [], setSemesters, setSemesterCGPAUnsaved, onNavigateToAbout }) {
+export default function SemesterCGPAPage({ 
+  subjects, 
+  onUpdateCGPAStatus, 
+  addToast, 
+  showAdvanced, 
+  setShowAdvanced, 
+  semesters = [], 
+  setSemesters, 
+  setSemesterCGPAUnsaved, 
+  onNavigateToAbout,
+  defaultCredits = 3,
+  warningsEnabled = true
+}) {
   const [activeMode, setActiveMode] = useState('quick'); // 'quick' or 'detailed'
   const quickInputRef = useRef(null);
   const [isLockModalOpen, setIsLockModalOpen] = useState(false);
@@ -306,7 +318,11 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
   const [quickRows, setQuickRows] = useState([]);
   const [quickErrors, setQuickErrors] = useState({});
   const [quickCalculated, setQuickCalculated] = useState(false);
-  const [defaultQuickCredits, setDefaultQuickCredits] = useState('3');
+  const [defaultQuickCredits, setDefaultQuickCredits] = useState(() => String(defaultCredits));
+
+  useEffect(() => {
+    setDefaultQuickCredits(String(defaultCredits));
+  }, [defaultCredits]);
 
   // Detailed Mode States
   const [sandboxRows, setSandboxRows] = useState([]);
@@ -393,7 +409,7 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
   useEffect(() => {
     if (subjects && subjects.length > 0) {
       const filtered = subjects.filter(sub => sub.includeInCGPA !== false);
-      const initial = filtered.map(sub => {
+      const initial = filtered.map((sub, index) => {
         const attWeightageLimit = 5;
         const caWeightageLimit = 25;
         const midWeightageLimit = 20;
@@ -439,7 +455,8 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
           code: sub.code,
           credits: parseFloat(sub.credits) || 3,
           marksData: marksData,
-          isDbSubject: true
+          isDbSubject: true,
+          expanded: index === 0
         };
 
         return {
@@ -499,24 +516,26 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
     const errs = {};
     let isValid = true;
 
-    quickRows.forEach((row) => {
-      const rowErrs = {};
-      if (row.credits === '') {
-        rowErrs.credits = "Credits required";
-        isValid = false;
-      }
-      if (row.weightage === '') {
-        rowErrs.weightage = "Weightage required";
-        isValid = false;
-      }
-      if (Object.keys(rowErrs).length > 0) {
-        errs[row.id] = rowErrs;
-      }
-    });
+    if (warningsEnabled) {
+      quickRows.forEach((row) => {
+        const rowErrs = {};
+        if (row.credits === '') {
+          rowErrs.credits = "Credits required";
+          isValid = false;
+        }
+        if (row.weightage === '') {
+          rowErrs.weightage = "Weightage required";
+          isValid = false;
+        }
+        if (Object.keys(rowErrs).length > 0) {
+          errs[row.id] = rowErrs;
+        }
+      });
+    }
 
     setQuickErrors(errs);
 
-    if (!isValid) {
+    if (!isValid && warningsEnabled) {
       if (addToast) {
         addToast("Please fill in all required credits and weightages first", "error");
       }
@@ -565,7 +584,7 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
             credits: 3,
             inputMode: 'marks',
             grade: 'A',
-            expanded: false,
+            expanded: i === 1,
             marksData: {
               attendance: '',
               attendanceWeight: '',
@@ -634,46 +653,48 @@ export default function SemesterCGPAPage({ subjects, onUpdateCGPAStatus, addToas
     const errs = {};
     let isValid = true;
 
-    const updatedRows = sandboxRows.map((row) => {
-      const rowErrs = {};
-      if (!row.code || row.code.trim() === '') {
-        rowErrs.code = "Course Code required";
-        isValid = false;
-      }
-      
-      const m = row.marksData || {};
-      if (m.attendance === '' || m.attendance === undefined || m.attendance === null) {
-        rowErrs.attendance = "Attendance marks required";
-        isValid = false;
-      }
-      if (m.caObt === '' || m.caObt === undefined || m.caObt === null) {
-        rowErrs.caObt = "CA marks required";
-        isValid = false;
-      }
-      if (m.midApplicable && (m.midObt === '' || m.midObt === undefined || m.midObt === null)) {
-        rowErrs.midObt = "Midterm marks required";
-        isValid = false;
-      }
-      if (m.endApplicable && (m.endObt === '' || m.endObt === undefined || m.endObt === null)) {
-        rowErrs.endObt = "End Sem marks required";
-        isValid = false;
-      }
+    if (warningsEnabled) {
+      const updatedRows = sandboxRows.map((row) => {
+        const rowErrs = {};
+        if (!row.code || row.code.trim() === '') {
+          rowErrs.code = "Course Code required";
+          isValid = false;
+        }
+        
+        const m = row.marksData || {};
+        if (m.attendance === '' || m.attendance === undefined || m.attendance === null) {
+          rowErrs.attendance = "Attendance marks required";
+          isValid = false;
+        }
+        if (m.caObt === '' || m.caObt === undefined || m.caObt === null) {
+          rowErrs.caObt = "CA marks required";
+          isValid = false;
+        }
+        if (m.midApplicable && (m.midObt === '' || m.midObt === undefined || m.midObt === null)) {
+          rowErrs.midObt = "Midterm marks required";
+          isValid = false;
+        }
+        if (m.endApplicable && (m.endObt === '' || m.endObt === undefined || m.endObt === null)) {
+          rowErrs.endObt = "End Sem marks required";
+          isValid = false;
+        }
 
-      if (Object.keys(rowErrs).length > 0) {
-        errs[row.id] = rowErrs;
-        // Expand any row card that has active validation errors
-        return { ...row, expanded: true };
-      }
-      return row;
-    });
+        if (Object.keys(rowErrs).length > 0) {
+          errs[row.id] = rowErrs;
+          // Expand any row card that has active validation errors
+          return { ...row, expanded: true };
+        }
+        return row;
+      });
 
-    if (Object.keys(errs).length > 0) {
-      setSandboxRows(updatedRows);
+      if (Object.keys(errs).length > 0) {
+        setSandboxRows(updatedRows);
+      }
     }
 
     setDetailedErrors(errs);
 
-    if (!isValid) {
+    if (!isValid && warningsEnabled) {
       if (addToast) {
         addToast("Please fill in all required course codes and marks first *", "error");
       }

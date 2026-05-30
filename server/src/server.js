@@ -11,11 +11,26 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/markfl
 app.use(cors());
 app.use(express.json());
 
+// High Security Access Token Middleware
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN || 'phaniswar883459';
+app.use((req, res, next) => {
+  if (req.path === '/api/health') {
+    return next();
+  }
+  const clientToken = req.headers['x-access-token'];
+  if (clientToken !== ACCESS_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid or missing access token' });
+  }
+  next();
+});
+
 // Routes
 const subjectRoutes = require('./routes/subjects');
 const feedbackRoutes = require('./routes/feedback');
+const aiRoutes = require('./routes/ai');
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

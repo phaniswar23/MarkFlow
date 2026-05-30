@@ -11,6 +11,7 @@ import DisclaimerModal from './components/DisclaimerModal';
 import { ToastContainer } from './components/Toast';
 import { calculateSubjectMarks } from './utils/calcEngine';
 import { exportToCSV, exportToPDF } from './utils/exportUtils';
+import AIAssistant from './components/AIAssistant';
 
 // Modular Subpages
 import DashboardPage from './components/pages/DashboardPage';
@@ -25,14 +26,68 @@ import SettingsPage from './components/pages/SettingsPage';
 import AboutDeveloperPage from './components/pages/AboutDeveloperPage';
 import HistoryPage from './components/pages/HistoryPage';
 import BunkPlannerPage from './components/pages/BunkPlannerPage';
+import { soundSynth } from './utils/soundUtils';
 
 const API_BASE_URL = 'http://localhost:5001/api';
 
 export default function App() {
+  const [isLocked, setIsLocked] = useState(() => {
+    return localStorage.getItem('markflow_access_token') !== 'phaniswar883459';
+  });
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [attempts, setAttempts] = useState(() => {
+    return parseInt(localStorage.getItem('markflow_pin_attempts') || '0', 10);
+  });
+  const [lockedUntil, setLockedUntil] = useState(() => {
+    const saved = localStorage.getItem('markflow_locked_until');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    let timer;
+    if (lockedUntil > now) {
+      timer = setInterval(() => {
+        setNow(Date.now());
+      }, 13);
+    }
+    return () => clearInterval(timer);
+  }, [lockedUntil, now]);
+
+  const handleUnlock = (e) => {
+    if (e) e.preventDefault();
+    if (pinInput === 'phaniswar883459') {
+      localStorage.setItem('markflow_access_token', 'phaniswar883459');
+      setAttempts(0);
+      localStorage.setItem('markflow_pin_attempts', '0');
+      setIsLocked(false);
+      playCelebrate();
+    } else {
+      setPinError(true);
+      playWarning();
+      setPinInput('');
+      const nextAttempts = attempts + 1;
+      setAttempts(nextAttempts);
+      localStorage.setItem('markflow_pin_attempts', String(nextAttempts));
+      
+      if (nextAttempts >= 3) {
+        const hundredYearsMs = 100 * 365.25 * 24 * 60 * 60 * 1000;
+        const lockTime = Date.now() + hundredYearsMs;
+        setLockedUntil(lockTime);
+        localStorage.setItem('markflow_locked_until', String(lockTime));
+      }
+      setTimeout(() => setPinError(false), 600);
+    }
+  };
+
   const [subjects, setSubjects] = useState([]);
   const [activeSubject, setActiveSubject] = useState(null);
   const [backendConnected, setBackendConnected] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
 
   // History State
   const [historyList, setHistoryList] = useState(() => {
@@ -89,6 +144,19 @@ export default function App() {
     document.addEventListener('wheel', handleWheel, { passive: false });
     return () => {
       document.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
+  // Listen for global navigation events (e.g. from chatbot)
+  useEffect(() => {
+    const handleGlobalNavigate = (e) => {
+      if (e.detail) {
+        handlePageChange(e.detail);
+      }
+    };
+    window.addEventListener('markflow-navigate', handleGlobalNavigate);
+    return () => {
+      window.removeEventListener('markflow-navigate', handleGlobalNavigate);
     };
   }, []);
 
@@ -227,6 +295,7 @@ export default function App() {
   const [pendingPage, setPendingPage] = useState(null);
 
   const handlePageChange = (targetPage) => {
+    playTap();
     const hasUnsaved = (activePage === 'ca-weightage' && caUnsaved) || 
                        (activePage === 'subject-wise' && subjectWiseUnsaved) || 
                        (activePage === 'semester-cgpa' && semesterCGPAUnsaved);
@@ -286,6 +355,158 @@ export default function App() {
     });
     root.classList.add(`theme-${brandColor}`);
   }, [brandColor]);
+
+  // Global Defaults & Warnings configuration states
+  const [defaultCACount, setDefaultCACount] = useState(() => parseInt(localStorage.getItem('markflow-global-ca-count')) || 2);
+  const [defaultMaxMarks, setDefaultMaxMarks] = useState(() => parseInt(localStorage.getItem('markflow-global-max-marks')) || 30);
+  const [defaultWeightage, setDefaultWeightage] = useState(() => parseInt(localStorage.getItem('markflow-global-weightage')) || 25);
+  const [defaultCredits, setDefaultCredits] = useState(() => parseInt(localStorage.getItem('markflow-global-credits')) || 3);
+  const [warningsEnabled, setWarningsEnabled] = useState(() => localStorage.getItem('markflow-global-warnings-enabled') !== 'false');
+
+  useEffect(() => {
+    localStorage.setItem('markflow-global-ca-count', defaultCACount);
+    localStorage.setItem('markflow-global-max-marks', defaultMaxMarks);
+    localStorage.setItem('markflow-global-weightage', defaultWeightage);
+    localStorage.setItem('markflow-global-credits', defaultCredits);
+    localStorage.setItem('markflow-global-warnings-enabled', warningsEnabled ? 'true' : 'false');
+  }, [defaultCACount, defaultMaxMarks, defaultWeightage, defaultCredits, warningsEnabled]);
+
+  // Global Typography States (Font Size & Font Weight)
+  const [appFontSize, setAppFontSize] = useState(() => localStorage.getItem('markflow-font-size') || 'base');
+  const [appFontWeight, setAppFontWeight] = useState(() => localStorage.getItem('markflow-font-weight') || 'normal');
+
+  useEffect(() => {
+    localStorage.setItem('markflow-font-size', appFontSize);
+    const root = window.document.documentElement;
+    const sizes = {
+      'xs': '85%',
+      'sm': '92.5%',
+      'base': '100%',
+      'lg': '107.5%',
+      'xl': '115%',
+      '2xl': '125%'
+    };
+    root.style.setProperty('--app-base-font-size', sizes[appFontSize] || '100%');
+  }, [appFontSize]);
+
+  useEffect(() => {
+    localStorage.setItem('markflow-font-weight', appFontWeight);
+    const root = window.document.documentElement;
+    const weights = {
+      'light': '300',
+      'normal': '400',
+      'medium': '500',
+      'semibold': '600',
+      'bold': '700',
+      'black': '900'
+    };
+    const offsets = {
+      'light': '-100',
+      'normal': '0',
+      'medium': '100',
+      'semibold': '200',
+      'bold': '300',
+      'black': '500'
+    };
+    root.style.setProperty('--app-font-weight', weights[appFontWeight] || '400');
+    root.style.setProperty('--app-font-weight-offset', offsets[appFontWeight] || '0');
+  }, [appFontWeight]);
+
+  // Global Font Family State
+  const [appFontFamily, setAppFontFamily] = useState(() => localStorage.getItem('markflow-font-family') || 'jakarta');
+  
+  useEffect(() => {
+    localStorage.setItem('markflow-font-family', appFontFamily);
+    const root = window.document.documentElement;
+    const families = {
+      'jakarta': '"Plus Jakarta Sans", "Inter", sans-serif',
+      'inter': '"Inter", sans-serif',
+      'outfit': '"Outfit", sans-serif',
+      'playfair': '"Playfair Display", serif',
+      'mono': '"Fira Code", monospace'
+    };
+    root.style.setProperty('--app-font-family', families[appFontFamily] || families['jakarta']);
+  }, [appFontFamily]);
+
+  // Global Neon Glow Intensity State
+  const [glowIntensity, setGlowIntensity] = useState(() => localStorage.getItem('markflow-glow-intensity') || 'subtle');
+
+  const brandColorRGBs = {
+    indigo: '79, 70, 229',
+    emerald: '16, 185, 129',
+    red: '220, 38, 38',
+    violet: '124, 58, 237',
+    blue: '37, 99, 235',
+    teal: '13, 148, 136'
+  };
+
+  useEffect(() => {
+    localStorage.setItem('markflow-glow-intensity', glowIntensity);
+    const root = window.document.documentElement;
+    const rgb = brandColorRGBs[brandColor] || brandColorRGBs['indigo'];
+    
+    if (glowIntensity === 'flat') {
+      root.style.setProperty('--app-shadow-glow', 'none');
+      root.style.setProperty('--app-shadow-glow-teal', 'none');
+      root.style.setProperty('--app-shadow-glow-rose', 'none');
+      root.style.setProperty('--app-shadow-soft', '0 2px 12px 0 rgba(0, 0, 0, 0.03), 0 4px 24px 0 rgba(0, 0, 0, 0.02)');
+    } else if (glowIntensity === 'subtle') {
+      root.style.setProperty('--app-shadow-glow', `0 4px 20px 0 rgba(${rgb}, 0.08), 0 0 15px 0 rgba(${rgb}, 0.04)`);
+      root.style.setProperty('--app-shadow-glow-teal', `0 4px 20px 0 rgba(79, 209, 197, 0.1), 0 0 15px 0 rgba(79, 209, 197, 0.05)`);
+      root.style.setProperty('--app-shadow-glow-rose', `0 4px 20px 0 rgba(229, 115, 115, 0.08), 0 0 15px 0 rgba(229, 115, 115, 0.04)`);
+      root.style.setProperty('--app-shadow-soft', `0 4px 20px 0 rgba(${rgb}, 0.03), 0 2px 12px 0 rgba(0, 0, 0, 0.02)`);
+    } else if (glowIntensity === 'hyper') {
+      root.style.setProperty('--app-shadow-glow', `0 4px 30px 0 rgba(${rgb}, 0.35), 0 0 25px 0 rgba(${rgb}, 0.2)`);
+      root.style.setProperty('--app-shadow-glow-teal', `0 4px 30px 0 rgba(79, 209, 197, 0.4), 0 0 25px 0 rgba(79, 209, 197, 0.25)`);
+      root.style.setProperty('--app-shadow-glow-rose', `0 4px 30px 0 rgba(229, 115, 115, 0.35), 0 0 25px 0 rgba(229, 115, 115, 0.2)`);
+      root.style.setProperty('--app-shadow-soft', `0 8px 30px 0 rgba(${rgb}, 0.18), 0 2px 15px 0 rgba(${rgb}, 0.08)`);
+    }
+  }, [glowIntensity, brandColor]);
+
+  // Global Audio Feedback State
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(() => localStorage.getItem('markflow-sound-effects') === 'true');
+
+  useEffect(() => {
+    localStorage.setItem('markflow-sound-effects', soundEffectsEnabled ? 'true' : 'false');
+  }, [soundEffectsEnabled]);
+
+  // Dynamic sound player wrappers
+  const playTap = () => {
+    if (soundEffectsEnabled) soundSynth.playTap();
+  };
+  const playSuccess = () => {
+    if (soundEffectsEnabled) soundSynth.playSuccess();
+  };
+  const playCelebrate = () => {
+    if (soundEffectsEnabled) soundSynth.playCelebrate();
+  };
+  const playWarning = () => {
+    if (soundEffectsEnabled) soundSynth.playWarning();
+  };
+
+  // Play subtle tap sound on setting adjustments (skip on initial load)
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    playTap();
+  }, [
+    themeMode,
+    animationsEnabled,
+    brandColor,
+    defaultCACount,
+    defaultMaxMarks,
+    defaultWeightage,
+    defaultCredits,
+    warningsEnabled,
+    appFontSize,
+    appFontWeight,
+    appFontFamily,
+    glowIntensity,
+    soundEffectsEnabled
+  ]);
 
   // Dynamic Accent-colored Favicon Generator
   useEffect(() => {
@@ -406,6 +627,15 @@ export default function App() {
   const addToast = (message, type = 'error') => {
     const id = Date.now().toString() + Math.random().toString();
     setToasts((prev) => [...prev, { id, message, type }]);
+    
+    // Play native synthesized UI feedback sounds
+    if (type === 'success') {
+      playSuccess();
+    } else if (type === 'error' || type === 'warning' || type === 'danger') {
+      playWarning();
+    } else {
+      playTap();
+    }
   };
 
   const addToastRef = useRef(addToast);
@@ -961,10 +1191,194 @@ export default function App() {
     addToast('CA Session deleted', 'success');
   };
 
+  const isSystemPermanentlyLocked = lockedUntil > now;
+  if (isSystemPermanentlyLocked) {
+    const diffMs = lockedUntil - now;
+    const msInSec = 1000;
+    const msInMin = msInSec * 60;
+    const msInHr = msInMin * 60;
+    const msInDay = msInHr * 24;
+    const msInYear = msInDay * 365.25;
+
+    const years = Math.floor(diffMs / msInYear);
+    let remain = diffMs % msInYear;
+    const days = Math.floor(remain / msInDay);
+    remain %= msInDay;
+    const hours = Math.floor(remain / msInHr);
+    remain %= msInHr;
+    const minutes = Math.floor(remain / msInMin);
+    remain %= msInMin;
+    const seconds = Math.floor(remain / msInSec);
+    const milliseconds = remain % msInSec;
+
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-slate-950 font-mono z-[99999] overflow-hidden select-none">
+        {/* Flashing dark red emergency backlight */}
+        <div className="absolute inset-0 bg-red-950/20 animate-pulse pointer-events-none" style={{ animationDuration: '2s' }} />
+        
+        {/* Glowing background circles */}
+        <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-red-600/10 blur-[150px] pointer-events-none" />
+        <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-red-800/10 blur-[150px] pointer-events-none" />
+
+        {/* Lock glassmorphic panel */}
+        <div className="w-full max-w-2xl p-10 mx-4 rounded-3xl border border-red-500/30 bg-slate-900/40 backdrop-blur-2xl shadow-2xl relative z-10 text-center">
+          {/* Warning line */}
+          <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-red-500 to-transparent animate-pulse" />
+
+          {/* Alarm Icon */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="h-20 w-20 rounded-full bg-red-500/10 border-2 border-red-500/40 flex items-center justify-center text-red-500 shadow-lg shadow-red-500/20 animate-pulse">
+              <AlertTriangle size={48} />
+            </div>
+            <h1 className="text-3xl font-black text-red-500 tracking-wider mt-4 uppercase">SYSTEM TERMINATED</h1>
+            <p className="text-xs font-bold text-red-400/80 uppercase tracking-widest mt-1">SECURITY CODES EXCEEDED - LOCKOUT INITIATED</p>
+          </div>
+
+          <div className="text-slate-300 text-sm space-y-4 my-6 font-sans">
+            <p>
+              Your academic system is locked for <strong className="text-red-400">100 Years</strong> due to 3 consecutive failed login attempts.
+            </p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider font-mono">
+              IP ADDRESS LOGGED • ACCESS SHUTDOWN ACTIVE
+            </p>
+          </div>
+
+          {/* Ticking countdown timer */}
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 my-8 font-mono">
+            {[
+              { val: years, label: 'YEARS' },
+              { val: days, label: 'DAYS' },
+              { val: hours, label: 'HOURS' },
+              { val: minutes, label: 'MINUTES' },
+              { val: seconds, label: 'SECONDS' },
+              { val: String(milliseconds).padStart(3, '0'), label: 'MILLISECONDS' }
+            ].map((unit, idx) => (
+              <div key={idx} className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 shadow-inner">
+                <span className="block text-2xl sm:text-3xl font-black text-red-500 tracking-widest">
+                  {unit.val}
+                </span>
+                <span className="block text-[8px] font-bold text-slate-500 tracking-wider mt-1 uppercase">
+                  {unit.label}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Danger footer notice */}
+          <div className="pt-6 border-t border-slate-800/40">
+            <span className="text-[10px] font-bold text-red-400/60 uppercase tracking-widest block animate-pulse">
+              DECRYPTING BLOCK SIGNAL: HIGH SECURITY FAILSAFE LEVEL 4
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLocked) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-slate-950 font-sans z-[99999] overflow-hidden select-none">
+        {/* Animated ambient glowing spots */}
+        <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none animate-pulse animate-duration-[8s]" />
+        <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-emerald-600/10 blur-[120px] pointer-events-none animate-pulse animate-duration-[12s]" />
+
+        {/* Lock glassmorphic panel */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          animate={pinError ? {
+            x: [0, -10, 10, -10, 10, -5, 5, 0],
+            transition: { duration: 0.5 }
+          } : { opacity: 1, scale: 1, y: 0 }}
+          className="w-full max-w-md p-8 mx-4 rounded-3xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl shadow-2xl relative z-10"
+        >
+          {/* Neon line indicator */}
+          <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
+
+          {/* Logo / Badge */}
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="h-16 w-16 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-600/30 mb-4 border border-indigo-500/20">
+              <GraduationCap size={36} />
+            </div>
+            <h2 className="text-2xl font-black text-white tracking-tight">MarkFlow</h2>
+            <p className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-widest">High Security Access Control</p>
+          </div>
+
+          {/* Enter Token Input */}
+          <form onSubmit={handleUnlock} className="space-y-6">
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 text-center">
+                Enter Access Token
+              </label>
+              
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value)}
+                  placeholder="••••••••••••••"
+                  className={`w-full py-4 px-6 text-center text-xl font-bold tracking-widest rounded-2xl border bg-slate-950 text-white placeholder-slate-700 focus:outline-none focus:ring-2 transition-all ${
+                    pinError 
+                      ? 'border-red-500 focus:ring-red-500/30' 
+                      : 'border-slate-800 focus:border-indigo-500 focus:ring-indigo-500/30'
+                  }`}
+                  autoFocus
+                />
+                
+                {/* View button */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-1"
+                >
+                  {showPassword ? <X size={20} /> : <Sparkles size={20} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            <AnimatePresence>
+              {pinError && (
+                <motion.p
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="text-red-500 text-xs font-semibold text-center mt-2 flex items-center justify-center gap-1.5"
+                >
+                  <AlertTriangle size={14} /> Incorrect Access Token
+                </motion.p>
+              )}
+            </AnimatePresence>
+
+            {/* Buttons */}
+            <button
+              type="submit"
+              className="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 border border-indigo-500/20"
+            >
+              Verify & Unlock System
+            </button>
+          </form>
+
+          {/* Quick Info */}
+          <div className="mt-8 pt-6 border-t border-slate-800/40 text-center">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+              Authorized Personnel Only
+            </span>
+            <span className="text-[9px] font-semibold text-slate-600 mt-1 block">
+              MarkFlow Academic OS v2.0 • Secured Environment
+            </span>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#f8fafc] font-sans text-slate-800 antialiased overflow-hidden">
       {/* Toast Notification System */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
+
+      {/* Floating AI Assistant Widget */}
+      <AIAssistant />
 
       {/* Desktop Left Sidebar Panel */}
       <aside 
@@ -1037,7 +1451,18 @@ export default function App() {
         </div>
 
         {/* Collapsible toggle footer */}
-        <div className="p-3.5 border-t border-slate-800/60">
+        <div className="p-3.5 border-t border-slate-800/60 space-y-2">
+          <button
+            onClick={() => {
+              localStorage.removeItem('markflow_access_token');
+              setIsLocked(true);
+            }}
+            className="w-full flex items-center justify-center gap-2 p-2 rounded-xl bg-red-955/20 hover:bg-red-900/30 text-red-400 hover:text-red-300 border border-red-900/30 transition-colors cursor-pointer outline-none text-xs font-bold"
+            title="Lock System"
+          >
+            <X size={15} />
+            {!sidebarCollapsed && <span>Lock System</span>}
+          </button>
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="w-full flex items-center justify-center p-2 rounded-xl bg-slate-800/40 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer text-slate-400 outline-none"
@@ -1204,6 +1629,10 @@ export default function App() {
                     onNavigateToSubjectWise={handleNavigateToSubjectWiseFromCA}
                     onDeleteCASession={handleDeleteCASession}
                     addToast={addToast}
+                    defaultCACount={defaultCACount}
+                    defaultMaxMarks={defaultMaxMarks}
+                    defaultWeightage={defaultWeightage}
+                    warningsEnabled={warningsEnabled}
                   />
                 )}
                 
@@ -1220,6 +1649,11 @@ export default function App() {
                     onUndoSubjectDelete={handleUndoSubjectDelete}
                     addToast={addToast}
                     setSubjectWiseUnsaved={setSubjectWiseUnsaved}
+                    defaultCACount={defaultCACount}
+                    defaultMaxMarks={defaultMaxMarks}
+                    defaultWeightage={defaultWeightage}
+                    defaultCredits={defaultCredits}
+                    warningsEnabled={warningsEnabled}
                   />
                 )}
 
@@ -1247,6 +1681,8 @@ export default function App() {
                     setSemesters={handleSetSemesters}
                     setSemesterCGPAUnsaved={setSemesterCGPAUnsaved}
                     onNavigateToAbout={() => handlePageChange('about')}
+                    defaultCredits={defaultCredits}
+                    warningsEnabled={warningsEnabled}
                   />
                 )}
 
@@ -1257,6 +1693,7 @@ export default function App() {
                     semesters={overallSemesters}
                     setSemesters={handleSetSemesters}
                     addToast={addToast}
+                    defaultCredits={defaultCredits}
                   />
                 )}
 
@@ -1337,6 +1774,27 @@ export default function App() {
                     brandColor={brandColor}
                     setBrandColor={setBrandColor}
                     addToast={addToast}
+                    defaultCACount={defaultCACount}
+                    setDefaultCACount={setDefaultCACount}
+                    defaultMaxMarks={defaultMaxMarks}
+                    setDefaultMaxMarks={setDefaultMaxMarks}
+                    defaultWeightage={defaultWeightage}
+                    setDefaultWeightage={setDefaultWeightage}
+                    defaultCredits={defaultCredits}
+                    setDefaultCredits={setDefaultCredits}
+                    warningsEnabled={warningsEnabled}
+                    setWarningsEnabled={setWarningsEnabled}
+                    appFontSize={appFontSize}
+                    setAppFontSize={setAppFontSize}
+                    appFontWeight={appFontWeight}
+                    setAppFontWeight={setAppFontWeight}
+                    appFontFamily={appFontFamily}
+                    setAppFontFamily={setAppFontFamily}
+                    glowIntensity={glowIntensity}
+                    setGlowIntensity={setGlowIntensity}
+                    soundEffectsEnabled={soundEffectsEnabled}
+                    setSoundEffectsEnabled={setSoundEffectsEnabled}
+                    playTap={playTap}
                   />
                 )}
 
@@ -1350,29 +1808,124 @@ export default function App() {
       </div>
 
       {/* Mobile Sticky Bottom Tab Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden backdrop-blur-md bg-white/90 dark:bg-slate-950/95 border-t border-slate-200/60 dark:border-slate-800/80 h-16 flex items-center overflow-x-auto scrollbar-none select-none shadow-lg">
-        <div className="flex items-center gap-3.5 px-4 h-full min-w-max">
-          {sidebarItems.map(item => {
-            const isActive = activePage === item.id;
+      <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden backdrop-blur-xl bg-white/80 dark:bg-slate-950/80 border border-slate-200/50 dark:border-slate-800/50 h-16 rounded-2xl flex items-center justify-between px-2 select-none shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300">
+        <div className="w-full grid grid-cols-4 gap-1 h-full items-center">
+          {[
+            { id: 'dashboard', label: 'Dashboard', icon: <Home size={20} /> },
+            { id: 'ca-weightage', label: 'CA Weightage', icon: <Calculator size={20} /> },
+            { id: 'semester-cgpa', label: 'Semester SGPA', icon: <BookOpen size={20} /> }
+          ].map(item => {
+            const isActive = activePage === item.id && !mobileMoreOpen;
             return (
               <button
                 key={item.id}
-                onClick={() => handlePageChange(item.id)}
-                className={`flex flex-col items-center justify-center px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
+                onClick={() => {
+                  setMobileMoreOpen(false);
+                  handlePageChange(item.id);
+                }}
+                className={`flex flex-col items-center justify-center py-2 rounded-xl transition-all cursor-pointer ${
                   isActive 
-                    ? 'text-indigo-600 dark:text-indigo-400 font-extrabold scale-105 bg-indigo-500/10' 
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-850/50'
+                    ? 'text-indigo-600 dark:text-indigo-400 font-black scale-105 bg-indigo-500/10' 
+                    : 'text-slate-500 dark:text-slate-450 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
-                <span className={isActive ? 'text-indigo-600 dark:text-indigo-400 animate-pulse-once' : 'text-slate-400 dark:text-slate-500'}>
+                <span className={isActive ? 'text-indigo-600 dark:text-indigo-400 scale-110 transition-transform' : 'text-slate-400 dark:text-slate-500'}>
                   {item.icon}
                 </span>
-                <span className="text-[8px] mt-1 tracking-wider uppercase font-extrabold whitespace-nowrap">{item.label}</span>
+                <span className="text-[9px] mt-1 tracking-tight font-black whitespace-nowrap">{item.label}</span>
               </button>
             );
           })}
+
+          {/* More Toggle Option */}
+          <button
+            onClick={() => setMobileMoreOpen(!mobileMoreOpen)}
+            className={`flex flex-col items-center justify-center py-2 rounded-xl transition-all cursor-pointer ${
+              mobileMoreOpen || !['dashboard', 'ca-weightage', 'semester-cgpa'].includes(activePage)
+                ? 'text-indigo-600 dark:text-indigo-400 font-black scale-105 bg-indigo-500/10' 
+                : 'text-slate-500 dark:text-slate-450 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <span className={mobileMoreOpen || !['dashboard', 'ca-weightage', 'semester-cgpa'].includes(activePage) ? 'text-indigo-600 dark:text-indigo-400 scale-110 transition-transform' : 'text-slate-400 dark:text-slate-500'}>
+              <Menu size={20} />
+            </span>
+            <span className="text-[9px] mt-1 tracking-tight font-black whitespace-nowrap">More</span>
+          </button>
         </div>
       </div>
+
+      {/* Mobile Premium Slide-up Sheet Overlay */}
+      <AnimatePresence>
+        {mobileMoreOpen && (
+          <>
+            {/* Backdrop blur transition */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileMoreOpen(false)}
+              className="fixed inset-0 z-40 bg-slate-950/30 dark:bg-slate-950/60 backdrop-blur-sm md:hidden"
+            />
+
+            {/* Premium drawer card */}
+            <motion.div
+              initial={{ opacity: 0, y: 150, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 150, scale: 0.96 }}
+              transition={{ type: 'spring', damping: 24, stiffness: 220 }}
+              className="fixed bottom-24 left-4 right-4 z-50 md:hidden bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-800/80 rounded-3xl p-5 shadow-[0_-15px_40px_rgba(0,0,0,0.12)] select-none"
+            >
+              {/* Header section with floating title look */}
+              <div className="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-800/60 pb-3">
+                <div>
+                  <h3 className="text-xs font-black tracking-wider text-slate-400 uppercase">Explore Hub</h3>
+                  <p className="text-[9px] font-medium text-slate-400 dark:text-slate-555">Select specialized toolkit page</p>
+                </div>
+                <button
+                  onClick={() => setMobileMoreOpen(false)}
+                  className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200/30 dark:border-slate-800/50 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-rose-500 hover:text-white transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Grid content mapping other options cleanly without scrolling */}
+              <div className="grid grid-cols-3 gap-2 max-h-[60vh] overflow-y-auto scrollbar-none pr-0.5">
+                {sidebarItems
+                  .filter(item => !['dashboard', 'ca-weightage', 'semester-cgpa'].includes(item.id))
+                  .map(item => {
+                    const isActive = activePage === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          handlePageChange(item.id);
+                          setMobileMoreOpen(false);
+                        }}
+                        className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all ${
+                          isActive
+                            ? 'bg-gradient-to-tr from-indigo-550 to-violet-650 text-white border-transparent shadow-md'
+                            : 'bg-slate-50/50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-350 border-slate-100/80 dark:border-slate-850 hover:bg-slate-100 dark:hover:bg-slate-850'
+                        }`}
+                      >
+                        <div className={`p-2 rounded-xl mb-1.5 transition-all ${
+                          isActive 
+                            ? 'bg-white/20 text-white' 
+                            : 'bg-white dark:bg-slate-950 text-slate-500 dark:text-slate-400 shadow-sm border border-slate-100 dark:border-slate-800/50'
+                        }`}>
+                          {item.icon}
+                        </div>
+                        <span className="text-[9px] font-black text-center leading-tight tracking-wide truncate w-full">
+                          {item.label === 'Formulas & Disclaimers' ? 'Formulas' : item.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Global Modals & Dialogs */}
       
@@ -1385,6 +1938,11 @@ export default function App() {
             onCreate={handleCreateSubject}
             subjects={subjects}
             addToast={addToast}
+            defaultCACount={defaultCACount}
+            defaultMaxMarks={defaultMaxMarks}
+            defaultWeightage={defaultWeightage}
+            defaultCredits={defaultCredits}
+            warningsEnabled={warningsEnabled}
           />
         )}
       </AnimatePresence>

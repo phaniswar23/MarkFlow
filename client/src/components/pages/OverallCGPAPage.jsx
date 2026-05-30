@@ -5,10 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { exportElement } from '../../utils/exportUtils';
 
-export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemesterCredits = 0, semesters, setSemesters, addToast }) {
+export default function OverallCGPAPage({ currentSemesterSGPA = 0, currentSemesterCredits = 0, semesters, setSemesters, addToast, defaultCredits: propDefaultCredits = 3 }) {
   const [targetCGPA, setTargetCGPA] = useState(8.5);
   const [remainingSemesters, setRemainingSemesters] = useState(3);
-  const [defaultCredits, setDefaultCredits] = useState('3');
+  const [defaultCredits, setDefaultCredits] = useState(() => String(propDefaultCredits));
+
+  useEffect(() => {
+    setDefaultCredits(String(propDefaultCredits));
+  }, [propDefaultCredits]);
   const [isCalculated, setIsCalculated] = useState(false);
   const containerRef = React.useRef(null);
 

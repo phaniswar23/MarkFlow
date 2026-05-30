@@ -54,7 +54,11 @@ export const calculateSubjectMarks = (subject) => {
   let selectionLabel = 'All CAs';
 
   // Apply selection logic based on percentages/fractions (dynamically supports best_X_Y format)
-  if (selectionLogic && selectionLogic.startsWith('best_')) {
+  if (selectionLogic === 'highest') {
+    const sorted = [...processed].sort((a, b) => b.fraction - a.fraction);
+    selected = sorted.slice(0, 1);
+    selectionLabel = 'Highest CA Score';
+  } else if (selectionLogic && selectionLogic.startsWith('best_')) {
     try {
       const parts = selectionLogic.split('_');
       const x = parseInt(parts[1]) || 2;

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;900&family=Outfit:wght@300;400;500;600;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -19,18 +20,30 @@
   --color-calm-rose: #e57373;
   --color-calm-lavender: #805ad5;
 
-  --font-sans: "Plus Jakarta Sans", "Inter", "system-ui", "sans-serif";
+  --font-sans: var(--app-font-family, "Plus Jakarta Sans", "Inter", "system-ui", "sans-serif");
 
-  --shadow-soft: 0 2px 12px 0 rgba(0, 0, 0, 0.03), 0 4px 24px 0 rgba(0, 0, 0, 0.02);
-  --shadow-soft-glow: 0 4px 20px 0 rgba(90, 103, 216, 0.08), 0 0 15px 0 rgba(90, 103, 216, 0.04);
-  --shadow-soft-glow-teal: 0 4px 20px 0 rgba(79, 209, 197, 0.1), 0 0 15px 0 rgba(79, 209, 197, 0.05);
-  --shadow-soft-glow-rose: 0 4px 20px 0 rgba(229, 115, 115, 0.08), 0 0 15px 0 rgba(229, 115, 115, 0.04);
+  --shadow-soft: var(--app-shadow-soft, 0 2px 12px 0 rgba(0, 0, 0, 0.03), 0 4px 24px 0 rgba(0, 0, 0, 0.02));
+  --shadow-soft-glow: var(--app-shadow-glow, 0 4px 20px 0 rgba(90, 103, 216, 0.08), 0 0 15px 0 rgba(90, 103, 216, 0.04));
+  --shadow-soft-glow-teal: var(--app-shadow-glow-teal, 0 4px 20px 0 rgba(79, 209, 197, 0.1), 0 0 15px 0 rgba(79, 209, 197, 0.05));
+  --shadow-soft-glow-rose: var(--app-shadow-glow-rose, 0 4px 20px 0 rgba(229, 115, 115, 0.08), 0 0 15px 0 rgba(229, 115, 115, 0.04));
+
+  --font-weight-light: calc(300 + var(--app-font-weight-offset, 0));
+  --font-weight-normal: calc(400 + var(--app-font-weight-offset, 0));
+  --font-weight-medium: calc(500 + var(--app-font-weight-offset, 0));
+  --font-weight-semibold: calc(600 + var(--app-font-weight-offset, 0));
+  --font-weight-bold: calc(700 + var(--app-font-weight-offset, 0));
+  --font-weight-extrabold: calc(800 + var(--app-font-weight-offset, 0));
+  --font-weight-black: calc(900 + var(--app-font-weight-offset, 0));
 }
 
 @layer base {
+  html {
+    font-size: var(--app-base-font-size, 100%) !important;
+  }
   body {
     @apply bg-[#f8fafc] text-slate-800 antialiased font-sans selection:bg-slate-200;
     overscroll-behavior: contain; /* Prevents chrome refresh-on-pull and back/forward swipe gestures */
+    font-weight: var(--app-font-weight, 400) !important;
   }
 
   button, 

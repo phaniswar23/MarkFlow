@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '../UI';
 import { Sparkles, BarChart2, TrendingUp, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line, ScatterChart, Scatter, ZAxis } from 'recharts';
+import { motion } from 'framer-motion';
 
 export default function AnalyticsPage({ subjects, semesters = [] }) {
   const totalSubjectsCount = subjects.length;
@@ -69,9 +70,22 @@ export default function AnalyticsPage({ subjects, semesters = [] }) {
               </h3>
               {totalSubjectsCount === 0 ? (
                 <div className="h-64 flex flex-col items-center justify-center text-center p-6 select-none bg-slate-50/20 rounded-2xl border border-dashed border-slate-200/80">
-                  <svg className="w-16 h-16 text-slate-300 mb-3 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                  </svg>
+                  <motion.div
+                    animate={{
+                      y: [0, -10, 0],
+                      rotate: [0, 3, -3, 0],
+                      scale: [1, 1.03, 0.97, 1]
+                    }}
+                    transition={{
+                      duration: 6,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  >
+                    <svg className="w-16 h-16 text-slate-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                    </svg>
+                  </motion.div>
                   <span className="text-xs font-bold text-slate-500">No Subjects Logged</span>
                   <p className="text-[10px] text-slate-400 mt-1 max-w-[200px]">Log subjects to view multidimensional radar charts.</p>
                 </div>
@@ -104,10 +118,21 @@ export default function AnalyticsPage({ subjects, semesters = [] }) {
               </h3>
               {totalSubjectsCount === 0 ? (
                 <div className="h-64 flex flex-col items-center justify-center text-center p-6 select-none bg-slate-50/20 rounded-2xl border border-dashed border-slate-200/80">
-                  <svg className="w-16 h-16 text-slate-300 mb-3 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
-                  </svg>
+                  <motion.div
+                    animate={{
+                      rotate: [0, 360],
+                      scale: [1, 1.05, 1]
+                    }}
+                    transition={{
+                      rotate: { duration: 25, repeat: Infinity, ease: "linear" },
+                      scale: { duration: 6, repeat: Infinity, ease: "easeInOut" }
+                    }}
+                  >
+                    <svg className="w-16 h-16 text-slate-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+                    </svg>
+                  </motion.div>
                   <span className="text-xs font-bold text-slate-500">No Subjects Logged</span>
                   <p className="text-[10px] text-slate-400 mt-1 max-w-[200px]">Log subjects to compare attendance against grade standing.</p>
                 </div>
@@ -142,9 +167,21 @@ export default function AnalyticsPage({ subjects, semesters = [] }) {
               </h3>
               {chronologicalSemesters.length === 0 ? (
                 <div className="h-64 flex flex-col items-center justify-center text-center p-6 select-none bg-slate-50/20 rounded-2xl border border-dashed border-slate-200/80">
-                  <svg className="w-16 h-16 text-slate-300 mb-3 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-                  </svg>
+                  <motion.div
+                    animate={{
+                      x: [0, 5, -5, 0],
+                      y: [0, -6, 6, 0]
+                    }}
+                    transition={{
+                      duration: 7,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  >
+                    <svg className="w-16 h-16 text-slate-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                    </svg>
+                  </motion.div>
                   <span className="text-xs font-bold text-slate-500">No Semester History</span>
                   <p className="text-[10px] text-slate-400 mt-1 max-w-[200px]">Perform SGPA calculations and save them to the Overall CGPA tab to trace semesters progression.</p>
                 </div>
@@ -176,9 +213,22 @@ export default function AnalyticsPage({ subjects, semesters = [] }) {
               </h3>
               {totalSubjectsCount === 0 ? (
                 <div className="h-64 flex flex-col items-center justify-center text-center p-6 select-none bg-slate-50/20 rounded-2xl border border-dashed border-slate-200/80">
-                  <svg className="w-16 h-16 text-slate-300 mb-3 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                  </svg>
+                  <motion.div
+                    animate={{
+                      y: [0, -8, 0],
+                      scale: [1, 1.04, 1],
+                      skewX: [0, 2, -2, 0]
+                    }}
+                    transition={{
+                      duration: 5,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  >
+                    <svg className="w-16 h-16 text-slate-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                    </svg>
+                  </motion.div>
                   <span className="text-xs font-bold text-slate-500">No Subjects Logged</span>
                   <p className="text-[10px] text-slate-400 mt-1 max-w-[200px]">Log subjects to analyze marks-attendance statistical correlations.</p>
                 </div>

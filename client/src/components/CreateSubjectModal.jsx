@@ -15,22 +15,36 @@ const toTitleCase = (str) => {
     .join(' ');
 };
 
-export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects, addToast }) {
+export default function CreateSubjectModal({ 
+  isOpen, 
+  onClose, 
+  onCreate, 
+  subjects, 
+  addToast,
+  defaultCACount = 2,
+  defaultMaxMarks = 30,
+  defaultWeightage = 25,
+  defaultCredits = 3,
+  warningsEnabled = true
+}) {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
-  const [caCount, setCaCount] = useState(2);
-  const [weightage, setWeightage] = useState(30);
-  const [assessments, setAssessments] = useState([
-    { name: 'CA1', obtainedMarks: 0, totalMarks: 30 },
-    { name: 'CA2', obtainedMarks: 0, totalMarks: 30 }
-  ]);
+  const [caCount, setCaCount] = useState(defaultCACount);
+  const [weightage, setWeightage] = useState(defaultWeightage);
+  const [assessments, setAssessments] = useState(() => {
+    const arr = [];
+    for (let i = 1; i <= defaultCACount; i++) {
+      arr.push({ name: `CA${i}`, obtainedMarks: 0, totalMarks: defaultMaxMarks });
+    }
+    return arr;
+  });
   const [errors, setErrors] = useState({});
   const [selectionLogic, setSelectionLogic] = useState('all');
   const [customBestOfX, setCustomBestOfX] = useState(2);
   const [customBestOfY, setCustomBestOfY] = useState(2);
 
   // New academic detail states
-  const [credits, setCredits] = useState(3);
+  const [credits, setCredits] = useState(defaultCredits);
   const [attendance, setAttendance] = useState(100);
   const [midtermApplicable, setMidtermApplicable] = useState(false);
   const [midtermObtained, setMidtermObtained] = useState(0);
@@ -40,6 +54,20 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
   const [endSemTotal, setEndSemTotal] = useState(100);
   const [endSemWeightage, setEndSemWeightage] = useState(50);
   const [showOptionalDetails, setShowOptionalDetails] = useState(false);
+
+  // Real-time synchronization of defaults when opening the Modal
+  useEffect(() => {
+    if (isOpen) {
+      setCaCount(defaultCACount);
+      setWeightage(defaultWeightage);
+      setCredits(defaultCredits);
+      const arr = [];
+      for (let i = 1; i <= defaultCACount; i++) {
+        arr.push({ name: `CA${i}`, obtainedMarks: 0, totalMarks: defaultMaxMarks });
+      }
+      setAssessments(arr);
+    }
+  }, [defaultCACount, defaultMaxMarks, defaultWeightage, defaultCredits, isOpen]);
 
   const firstInputRef = useRef(null);
 
@@ -86,6 +114,7 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
   });
 
   const validate = () => {
+    if (!warningsEnabled) return true;
     const tempErrors = {};
     const trimmedCode = code.trim().toUpperCase();
     
@@ -145,7 +174,7 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
     e.preventDefault();
     if (!validate()) return;
 
-    const trimmedCode = code.trim().toUpperCase();
+    const trimmedCode = code.trim() ? code.trim().toUpperCase() : 'TEMP';
     const trimmedName = name.trim();
     
     // If Name is blank, auto-assign Code as the Name
@@ -154,14 +183,14 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
     onCreate({
       name: finalSubjectName,
       code: trimmedCode,
-      weightage: parseFloat(weightage),
+      weightage: parseFloat(weightage) || defaultWeightage,
       selectionLogic: finalSelectionLogic,
       assessments: assessments.map(a => ({
         ...a,
         obtainedMarks: a.obtainedMarks === '' ? 0 : parseFloat(a.obtainedMarks) || 0,
-        totalMarks: parseFloat(a.totalMarks) || 30
+        totalMarks: parseFloat(a.totalMarks) || defaultMaxMarks
       })),
-      credits: parseFloat(credits) || 3,
+      credits: parseFloat(credits) || defaultCredits,
       attendance: parseFloat(attendance) || 100,
       midtermApplicable,
       midtermObtained: parseFloat(midtermObtained) || 0,
@@ -175,16 +204,19 @@ export default function CreateSubjectModal({ isOpen, onClose, onCreate, subjects
     // Reset Form states
     setName('');
     setCode('');
-    setCaCount(2);
-    setWeightage(30);
+    setCaCount(defaultCACount);
+    setWeightage(defaultWeightage);
     setSelectionLogic('all');
     setCustomBestOfX(2);
     setCustomBestOfY(2);
-    setAssessments([
-      { name: 'CA1', obtainedMarks: 0, totalMarks: 30 },
-      { name: 'CA2', obtainedMarks: 0, totalMarks: 30 }
-    ]);
-    setCredits(3);
+    setAssessments((() => {
+      const arr = [];
+      for (let i = 1; i <= defaultCACount; i++) {
+        arr.push({ name: `CA${i}`, obtainedMarks: 0, totalMarks: defaultMaxMarks });
+      }
+      return arr;
+    })());
+    setCredits(defaultCredits);
     setAttendance(100);
     setMidtermApplicable(false);
     setMidtermObtained(0);

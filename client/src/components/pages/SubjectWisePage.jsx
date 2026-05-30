@@ -43,7 +43,12 @@ export default function SubjectWisePage({
   undoSubjectTimer,
   onUndoSubjectDelete,
   addToast,
-  setSubjectWiseUnsaved
+  setSubjectWiseUnsaved,
+  defaultCACount = 2,
+  defaultMaxMarks = 30,
+  defaultWeightage = 25,
+  defaultCredits = 3,
+  warningsEnabled = true
 }) {
   const [activeStep, setActiveStep] = useState(1);
   const [results, setResults] = useState(null);
@@ -98,7 +103,7 @@ export default function SubjectWisePage({
     const caApplicable = sub.caApplicable !== undefined ? sub.caApplicable : true;
     const caResults = caApplicable ? calculateSubjectMarks({
       weightage: parseWeightage(sub.weightage, 25),
-      selectionLogic: sub.selectionLogic || 'best_2_3',
+      selectionLogic: sub.selectionLogic || 'all',
       assessments: (sub.assessments || []).map(a => ({
         ...a,
         obtainedMarks: a.obtainedMarks === '' ? 0 : parseFloat(a.obtainedMarks) || 0,
@@ -185,7 +190,7 @@ export default function SubjectWisePage({
   // Subject Info (Step 1)
   const [subCode, setSubCode] = useState(transferData?.code === 'NEW' ? '' : (transferData?.code || ''));
   const [subName, setSubName] = useState(transferData?.name || '');
-  const [subCredits, setSubCredits] = useState(3);
+  const [subCredits, setSubCredits] = useState(defaultCredits);
 
   // Attendance (Step 2)
   const [attendance, setAttendance] = useState(100);
@@ -195,17 +200,40 @@ export default function SubjectWisePage({
 
   // CA configuration (Step 3)
   const [caApplicable, setCaApplicable] = useState(true);
-  const [caCount, setCaCount] = useState(transferData?.assessments?.length || 2);
-  const [totalMarksPerCA, setTotalMarksPerCA] = useState(transferData?.assessments?.[0]?.totalMarks || 30);
-  const [caWeightage, setCaWeightage] = useState(transferData?.weightage || 25);
+  const [caCount, setCaCount] = useState(transferData?.assessments?.length || defaultCACount);
+  const [totalMarksPerCA, setTotalMarksPerCA] = useState(transferData?.assessments?.[0]?.totalMarks || defaultMaxMarks);
+  const [caWeightage, setCaWeightage] = useState(transferData?.weightage || defaultWeightage);
   const [selectionLogic, setSelectionLogic] = useState(transferData?.selectionLogic || 'all');
   const [customBestOfX, setCustomBestOfX] = useState(2);
   const [customBestOfY, setCustomBestOfY] = useState(3);
   
-  const [assessments, setAssessments] = useState(transferData?.assessments || [
-    { name: 'CA1', obtainedMarks: '', totalMarks: 30 },
-    { name: 'CA2', obtainedMarks: '', totalMarks: 30 }
-  ]);
+  const [assessments, setAssessments] = useState(transferData?.assessments || (() => {
+    const arr = [];
+    for (let i = 1; i <= defaultCACount; i++) {
+      arr.push({ name: `CA${i}`, obtainedMarks: '', totalMarks: defaultMaxMarks });
+    }
+    return arr;
+  })());
+
+  // Real-time synchronization of defaults when not typing a transfer or custom code
+  useEffect(() => {
+    if (!subCode && !subName) {
+      setSubCredits(defaultCredits);
+    }
+  }, [defaultCredits]);
+
+  useEffect(() => {
+    if (!transferData) {
+      setCaCount(defaultCACount);
+      setCaWeightage(defaultWeightage);
+      setTotalMarksPerCA(defaultMaxMarks);
+      const arr = [];
+      for (let i = 1; i <= defaultCACount; i++) {
+        arr.push({ name: `CA${i}`, obtainedMarks: '', totalMarks: defaultMaxMarks });
+      }
+      setAssessments(arr);
+    }
+  }, [defaultCACount, defaultMaxMarks, defaultWeightage]);
 
   // Midterm (Step 4)
   const [midtermApplicable, setMidtermApplicable] = useState(false);
@@ -255,7 +283,7 @@ export default function SubjectWisePage({
       setSubName(transferData.name === 'New Module' || !transferData.name ? '' : transferData.name);
       setSubCredits(3);
       setCaWeightage(transferData.weightage || 25);
-      setSelectionLogic(transferData.selectionLogic || 'best_2_3');
+      setSelectionLogic(transferData.selectionLogic || 'all');
       setIsImported(true);
       if (transferData.assessments) {
         setAssessments(transferData.assessments);
@@ -282,7 +310,7 @@ export default function SubjectWisePage({
     setAttendedClasses(sub.attendedClasses !== undefined ? sub.attendedClasses : Math.round(loadedAttendance * (sub.totalClasses || 40) / 100));
     
     setCaWeightage(sub.weightage || 25);
-    setSelectionLogic(sub.selectionLogic || 'best_2_3');
+    setSelectionLogic(sub.selectionLogic || 'all');
     setCaApplicable(sub.caApplicable !== undefined ? sub.caApplicable : true);
     setIsImported(false);
     if (sub.assessments) {
@@ -439,17 +467,19 @@ export default function SubjectWisePage({
   };
 
   const handleCalculate = () => {
-    if (currentTotalWeightage > 100 || hasValidationError()) {
+    if (warningsEnabled && (currentTotalWeightage > 100 || hasValidationError())) {
       setTriggerShake(true);
       setTimeout(() => setTriggerShake(false), 500);
       return;
     }
 
     const valErrors = {};
-    if (!subCode.trim()) valErrors.subCode = "Course Code is required";
-    if (!subCredits) valErrors.subCredits = "Credits are required";
+    if (warningsEnabled) {
+      if (!subCode.trim()) valErrors.subCode = "Course Code is required";
+      if (!subCredits) valErrors.subCredits = "Credits are required";
+    }
 
-    if (Object.keys(valErrors).length > 0) {
+    if (Object.keys(valErrors).length > 0 && warningsEnabled) {
       setErrors(valErrors);
       setTriggerShake(true);
       setActiveStep(1);
@@ -466,12 +496,12 @@ export default function SubjectWisePage({
   };
 
   const handleSaveClick = () => {
-    if (currentTotalWeightage > 100 || hasValidationError()) {
+    if (warningsEnabled && (currentTotalWeightage > 100 || hasValidationError())) {
       setTriggerShake(true);
       setTimeout(() => setTriggerShake(false), 500);
       return;
     }
-    if (!isValidationComplete()) {
+    if (warningsEnabled && !isValidationComplete()) {
       const valErrors = {};
       if (!subCode.trim()) valErrors.subCode = "Course Code is required";
       if (!subCredits) valErrors.subCredits = "Credits are required";
@@ -496,7 +526,7 @@ export default function SubjectWisePage({
     
     const subjectData = {
       id: editingId || Date.now().toString(),
-      code: subCode.toUpperCase(),
+      code: subCode.trim() ? subCode.trim().toUpperCase() : 'TEMP',
       name: subName || 'Untitled Subject',
       credits: parseInt(subCredits) || 3,
       attendance: parseFloat(attendance) || 0,
@@ -530,21 +560,23 @@ export default function SubjectWisePage({
     setEditingId(null);
     setSubCode('');
     setSubName('');
-    setSubCredits(3);
+    setSubCredits(defaultCredits);
     setAttendance(100);
     setAttendanceWeightage(5);
     setTotalClasses(40);
     setAttendedClasses(40);
-    setCaCount(3);
-    setTotalMarksPerCA(30);
-    setCaWeightage(25);
-    setSelectionLogic('best_2_3');
+    setCaCount(defaultCACount);
+    setTotalMarksPerCA(defaultMaxMarks);
+    setCaWeightage(defaultWeightage);
+    setSelectionLogic('all');
     setCaApplicable(true);
-    setAssessments([
-      { name: 'CA1', obtainedMarks: '', totalMarks: 30 },
-      { name: 'CA2', obtainedMarks: '', totalMarks: 30 },
-      { name: 'CA3', obtainedMarks: '', totalMarks: 30 }
-    ]);
+    setAssessments((() => {
+      const arr = [];
+      for (let i = 1; i <= defaultCACount; i++) {
+        arr.push({ name: `CA${i}`, obtainedMarks: '', totalMarks: defaultMaxMarks });
+      }
+      return arr;
+    })());
     setMidtermApplicable(false);
     setMidtermObtained('');
     setEndSemApplicable(false);
@@ -700,51 +732,53 @@ export default function SubjectWisePage({
   const handleNext = () => {
     const valErrors = {};
 
-    if (activeStep === 1) {
-      if (!subCode.trim()) valErrors.subCode = "Course Code need to be filled *";
-      if (!subCredits) valErrors.subCredits = "Credits need to be filled *";
-    } else if (activeStep === 2) {
-      if (attendance === '') {
-        valErrors.attendance = "Attendance Percentage need to be filled *";
-      }
-      if (attendanceWeightage === '') {
-        valErrors.attendanceWeightage = "Attendance Weightage need to be filled *";
-      }
-    } else if (activeStep === 3 && caApplicable) {
-      if (caWeightage === '') {
-        valErrors.caWeightage = "CA Weightage need to be filled *";
-      }
-      const emptyIndices = assessments
-        .map((a, i) => (a.obtainedMarks === '' ? i : -1))
-        .filter(i => i !== -1);
-      if (emptyIndices.length > 0) {
-        valErrors.ca = "Obtained marks need to be filled *";
-        valErrors.emptyCaIndices = emptyIndices;
-        addToast("Please fill in obtained marks for all CA fields, or disable the CA toggle above.", "error");
-      }
-    } else if (activeStep === 4 && midtermApplicable) {
-      if (midtermObtained === '') {
-        valErrors.midterm = "Obtained marks need to be filled *";
-      }
-      if (midtermTotal === '') {
-        valErrors.midtermTotal = "Total max marks need to be filled *";
-      }
-      if (midtermWeightage === '') {
-        valErrors.midtermWeightage = "Midterm weightage need to be filled *";
-      }
-    } else if (activeStep === 5 && endSemApplicable) {
-      if (endSemObtained === '') {
-        valErrors.endSem = "Obtained marks need to be filled *";
-      }
-      if (endSemTotal === '') {
-        valErrors.endSemTotal = "Total max marks need to be filled *";
-      }
-      if (endSemWeightage === '') {
-        valErrors.endSemWeightage = "End Sem weightage need to be filled *";
+    if (warningsEnabled) {
+      if (activeStep === 1) {
+        if (!subCode.trim()) valErrors.subCode = "Course Code need to be filled *";
+        if (!subCredits) valErrors.subCredits = "Credits need to be filled *";
+      } else if (activeStep === 2) {
+        if (attendance === '') {
+          valErrors.attendance = "Attendance Percentage need to be filled *";
+        }
+        if (attendanceWeightage === '') {
+          valErrors.attendanceWeightage = "Attendance Weightage need to be filled *";
+        }
+      } else if (activeStep === 3 && caApplicable) {
+        if (caWeightage === '') {
+          valErrors.caWeightage = "CA Weightage need to be filled *";
+        }
+        const emptyIndices = assessments
+          .map((a, i) => (a.obtainedMarks === '' ? i : -1))
+          .filter(i => i !== -1);
+        if (emptyIndices.length > 0) {
+          valErrors.ca = "Obtained marks need to be filled *";
+          valErrors.emptyCaIndices = emptyIndices;
+          addToast("Please fill in obtained marks for all CA fields, or disable the CA toggle above.", "error");
+        }
+      } else if (activeStep === 4 && midtermApplicable) {
+        if (midtermObtained === '') {
+          valErrors.midterm = "Obtained marks need to be filled *";
+        }
+        if (midtermTotal === '') {
+          valErrors.midtermTotal = "Total max marks need to be filled *";
+        }
+        if (midtermWeightage === '') {
+          valErrors.midtermWeightage = "Midterm weightage need to be filled *";
+        }
+      } else if (activeStep === 5 && endSemApplicable) {
+        if (endSemObtained === '') {
+          valErrors.endSem = "Obtained marks need to be filled *";
+        }
+        if (endSemTotal === '') {
+          valErrors.endSemTotal = "Total max marks need to be filled *";
+        }
+        if (endSemWeightage === '') {
+          valErrors.endSemWeightage = "End Sem weightage need to be filled *";
+        }
       }
     }
 
-    if (Object.keys(valErrors).length > 0) {
+    if (Object.keys(valErrors).length > 0 && warningsEnabled) {
       setErrors(valErrors);
       setTriggerShake(true);
       setTimeout(() => setTriggerShake(false), 500);

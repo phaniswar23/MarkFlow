@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Badge } from '../UI';
-import { Sparkles, Trash2, ShieldAlert, Sliders, Play, Share2, FileText, Download, Percent, Target, Clock, HelpCircle, RefreshCw } from 'lucide-react';
+import { Sparkles, Trash2, ShieldAlert, Sliders, Play, Share2, FileText, Download, Percent, Target, Clock, HelpCircle, RefreshCw, Check } from 'lucide-react';
 import { exportToCSV, exportToPDF } from '../../utils/exportUtils';
 import ConfirmationModal from '../ConfirmationModal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,13 +19,72 @@ export default function SettingsPage({
   setAnimationsEnabled,
   brandColor,
   setBrandColor,
-  addToast
+  addToast,
+  defaultCACount,
+  setDefaultCACount,
+  defaultMaxMarks,
+  setDefaultMaxMarks,
+  defaultWeightage,
+  setDefaultWeightage,
+  defaultCredits,
+  setDefaultCredits,
+  warningsEnabled,
+  setWarningsEnabled,
+  appFontSize,
+  setAppFontSize,
+  appFontWeight,
+  setAppFontWeight,
+  appFontFamily,
+  setAppFontFamily,
+  layoutDensity,
+  setLayoutDensity,
+  glowIntensity,
+  setGlowIntensity,
+  soundEffectsEnabled,
+  setSoundEffectsEnabled,
+  playTap
 }) {
   const [showConfirmWipe, setShowConfirmWipe] = useState(false);
   const [showExceptionForm, setShowExceptionForm] = useState(false);
   const [exceptionReason, setExceptionReason] = useState('');
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [isRequestPending, setIsRequestPending] = useState(false);
+
+  // Temporary local states to allow smooth input editing without instant snaps/resets
+  const [tempCACount, setTempCACount] = useState(defaultCACount);
+  const [tempMaxMarks, setTempMaxMarks] = useState(defaultMaxMarks);
+  const [tempWeightage, setTempWeightage] = useState(defaultWeightage);
+  const [tempCredits, setTempCredits] = useState(defaultCredits);
+
+  // Keep temporary states in sync with props when props change externally
+  useEffect(() => {
+    setTempCACount(defaultCACount);
+    setTempMaxMarks(defaultMaxMarks);
+    setTempWeightage(defaultWeightage);
+    setTempCredits(defaultCredits);
+  }, [defaultCACount, defaultMaxMarks, defaultWeightage, defaultCredits]);
+
+  const handleApplyAcademicDefaults = () => {
+    const parsedMaxMarks = parseInt(tempMaxMarks);
+    const parsedWeightage = parseInt(tempWeightage);
+
+    if (isNaN(parsedMaxMarks) || parsedMaxMarks <= 0) {
+      addToast("Please enter a valid positive number for Max Marks.", "error");
+      return;
+    }
+    if (isNaN(parsedWeightage) || parsedWeightage <= 0) {
+      addToast("Please enter a valid positive number for CA Weightage.", "error");
+      return;
+    }
+
+    setDefaultCACount(parseInt(tempCACount) || 2);
+    setDefaultMaxMarks(parsedMaxMarks);
+    setDefaultWeightage(parsedWeightage);
+    setDefaultCredits(parseInt(tempCredits) || 3);
+
+    addToast("Global academic defaults successfully applied!", "success");
+    if (playTap) playTap();
+  };
 
   const handleRequestSubmit = (e) => {
     e.preventDefault();
@@ -97,6 +156,46 @@ export default function SettingsPage({
                     </button>
                   ))}
                 </div>
+              </div>
+ 
+              <div className="flex justify-between items-center border-b border-slate-50 pb-3">
+                <div>
+                  <span className="text-xs font-bold text-slate-700 block">Typography Font Family</span>
+                  <p className="text-[10px] text-slate-400 font-medium">Switch global dashboard typography theme</p>
+                </div>
+                <div className="flex bg-slate-100 rounded-xl p-0.5 select-none overflow-x-auto max-w-[200px] sm:max-w-xs">
+                  {[
+                    { id: 'jakarta', label: 'Jakarta' },
+                    { id: 'inter', label: 'Inter' },
+                    { id: 'outfit', label: 'Outfit' },
+                    { id: 'playfair', label: 'Serif' },
+                    { id: 'mono', label: 'Mono' }
+                  ].map(font => (
+                    <button
+                      key={font.id}
+                      onClick={() => setAppFontFamily(font.id)}
+                      className={`px-2.5 py-1.5 rounded-lg text-[9px] font-bold transition-all cursor-pointer whitespace-nowrap ${appFontFamily === font.id ? 'bg-white text-indigo-600 shadow-soft font-extrabold' : 'text-slate-500'}`}
+                    >
+                      {font.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center border-b border-slate-50 pb-3">
+                <div>
+                  <span className="text-xs font-bold text-slate-700 block">UX Audio Feedback</span>
+                  <p className="text-[10px] text-slate-400 font-medium">Synthesize futuristic click & chime sounds</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={soundEffectsEnabled}
+                    onChange={(e) => setSoundEffectsEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-7 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-calm-indigo"></div>
+                </label>
               </div>
 
               <div className="flex justify-between items-center">
@@ -337,8 +436,171 @@ export default function SettingsPage({
           </Card>
         </div>
 
-        {/* Right Column Danger Zone (Lg: 4/12) */}
-        <div className="lg:col-span-4">
+        {/* Right Column Config & Danger Zone (Lg: 4/12) */}
+        <div className="lg:col-span-4 space-y-6">
+          {/* Global Academic Defaults Card */}
+          <Card className="!p-5 space-y-4">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Sliders size={14} className="text-indigo-500" />
+              <span>Global Academic Defaults</span>
+            </h3>
+            
+            <div className="space-y-3.5">
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Default Number of CAs</label>
+                <select
+                  value={tempCACount}
+                  onChange={(e) => setTempCACount(parseInt(e.target.value) || 2)}
+                  className="w-full text-xs font-bold text-slate-600 bg-white border border-slate-200 focus:ring-2 focus:ring-indigo-500/5 rounded-xl px-3 py-2 outline-none cursor-pointer hover:border-indigo-200 transition-all"
+                >
+                  {[1, 2, 3, 4, 5, 6].map(num => (
+                    <option key={num} value={num}>{num} Assessments</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Default Max Marks per CA</label>
+                <input
+                  type="number"
+                  value={tempMaxMarks}
+                  onChange={(e) => setTempMaxMarks(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/5 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Default CA Weightage</label>
+                <input
+                  type="number"
+                  value={tempWeightage}
+                  onChange={(e) => setTempWeightage(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/5 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Default Credits</label>
+                <select
+                  value={tempCredits}
+                  onChange={(e) => setTempCredits(parseInt(e.target.value) || 3)}
+                  className="w-full text-xs font-bold text-slate-600 bg-white border border-slate-200 focus:ring-2 focus:ring-indigo-500/5 rounded-xl px-3 py-2 outline-none cursor-pointer hover:border-indigo-200 transition-all"
+                >
+                  {[1, 2, 3, 4, 5, 6].map(num => (
+                    <option key={num} value={num}>{num} Credits</option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                onClick={handleApplyAcademicDefaults}
+                className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-soft-sm uppercase tracking-wider font-sans mt-2"
+                style={{ backgroundColor: 'rgb(79, 70, 229)' }}
+              >
+                <Check size={13} />
+                <span>Apply Changes</span>
+              </button>
+            </div>
+          </Card>
+
+          {/* Validation Warnings Configuration Card */}
+          <Card className="!p-5 space-y-4">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <ShieldAlert size={14} className="text-indigo-500" />
+              <span>Validations & Warnings</span>
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="text-xs font-bold text-slate-700 block">Enable Validation Warnings</span>
+                  <p className="text-[9px] text-slate-400 font-medium leading-normal mt-0.5">Toggle strict error checks when navigating modules or calculating marks</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={warningsEnabled}
+                    onChange={(e) => setWarningsEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-7 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-calm-indigo"></div>
+                </label>
+              </div>
+
+              {!warningsEnabled && (
+                <div className="p-3 bg-indigo-50/50 border border-indigo-100/60 rounded-xl text-[9px] text-indigo-700 font-bold leading-normal">
+                  💡 Sandbox Mode: Strict validation warnings are turned off. Navigation and calculations are now completely frictionless!
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* App Typography Scheme Card */}
+          <Card className="!p-5 space-y-4">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Sliders size={14} className="text-indigo-500" />
+              <span>App Typography Scheme</span>
+            </h3>
+
+            <div className="space-y-3.5">
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">App Font Scale</label>
+                <select
+                  value={appFontSize}
+                  onChange={(e) => setAppFontSize(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-600 bg-white border border-slate-200 focus:ring-2 focus:ring-indigo-500/5 rounded-xl px-3 py-2 outline-none cursor-pointer hover:border-indigo-200 transition-all"
+                >
+                  <option value="xs">Extra Small (85%)</option>
+                  <option value="sm">Small (92.5%)</option>
+                  <option value="base">Regular / Default (100%)</option>
+                  <option value="lg">Medium (107.5%)</option>
+                  <option value="xl">Large (115%)</option>
+                  <option value="2xl">Extra Large (125%)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">App Font Weight</label>
+                <select
+                  value={appFontWeight}
+                  onChange={(e) => setAppFontWeight(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-600 bg-white border border-slate-200 focus:ring-2 focus:ring-indigo-500/5 rounded-xl px-3 py-2 outline-none cursor-pointer hover:border-indigo-200 transition-all"
+                >
+                  <option value="light">Light (300)</option>
+                  <option value="normal">Regular / Default (400)</option>
+                  <option value="medium">Medium (500)</option>
+                  <option value="semibold">Semibold (600)</option>
+                  <option value="bold">Bold (700)</option>
+                  <option value="black">Black (900)</option>
+                </select>
+              </div>
+            </div>
+          </Card>
+
+          {/* App Visual Effects Card */}
+          <Card className="!p-5 space-y-4">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Sliders size={14} className="text-indigo-500" />
+              <span>App Visual Effects</span>
+            </h3>
+
+            <div className="space-y-3.5">
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Neon Glow Accent</label>
+                <select
+                  value={glowIntensity}
+                  onChange={(e) => setGlowIntensity(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-600 bg-white border border-slate-200 focus:ring-2 focus:ring-indigo-500/5 rounded-xl px-3 py-2 outline-none cursor-pointer hover:border-indigo-200 transition-all"
+                >
+                  <option value="flat">Flat / Clean (Solid Backgrounds)</option>
+                  <option value="subtle">Subtle Glow (Premium Balanced)</option>
+                  <option value="hyper">Hyper Glow (Vibrant Neon Accent)</option>
+                </select>
+              </div>
+            </div>
+          </Card>
+
+          {/* System Danger Zone */}
           <Card className="!p-5 border-rose-100 bg-rose-50/5 shadow-soft space-y-4">
             <h3 className="text-xs font-black text-rose-600 uppercase tracking-wider flex items-center gap-1.5">
               <ShieldAlert size={14} className="text-rose-500" />

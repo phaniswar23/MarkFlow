@@ -28,15 +28,38 @@ export default function CAWeightagePage({
   onNavigateToSubjectWise, 
   onDeleteCASession,
   setCaUnsaved,
-  addToast
+  addToast,
+  defaultCACount = 2,
+  defaultMaxMarks = 30,
+  defaultWeightage = 25,
+  warningsEnabled = true
 }) {
-  const [caCount, setCaCount] = useState(() => parseInt(localStorage.getItem('markflow-draft-caCount')) || 3);
-  const [totalMarksPerCA, setTotalMarksPerCA] = useState(() => localStorage.getItem('markflow-draft-totalMarksPerCA') || '30');
-  const [weightage, setWeightage] = useState(() => localStorage.getItem('markflow-draft-weightage') || '25');
-  const [selectionLogic, setSelectionLogic] = useState(() => localStorage.getItem('markflow-draft-selectionLogic') || 'best_2_3');
+  const [caCount, setCaCount] = useState(() => parseInt(localStorage.getItem('markflow-draft-caCount')) || defaultCACount);
+  const [totalMarksPerCA, setTotalMarksPerCA] = useState(() => localStorage.getItem('markflow-draft-totalMarksPerCA') || String(defaultMaxMarks));
+  const [weightage, setWeightage] = useState(() => localStorage.getItem('markflow-draft-weightage') || String(defaultWeightage));
+  const [selectionLogic, setSelectionLogic] = useState(() => localStorage.getItem('markflow-draft-selectionLogic') || 'all');
   const [customBestOfX, setCustomBestOfX] = useState(2);
   const [customBestOfY, setCustomBestOfY] = useState(3);
   const [expandedSessionId, setExpandedSessionId] = useState(null);
+
+  // Sync with global defaults in real-time if no draft exists
+  useEffect(() => {
+    if (!localStorage.getItem('markflow-draft-caCount')) {
+      setCaCount(defaultCACount);
+    }
+  }, [defaultCACount]);
+
+  useEffect(() => {
+    if (!localStorage.getItem('markflow-draft-totalMarksPerCA')) {
+      setTotalMarksPerCA(String(defaultMaxMarks));
+    }
+  }, [defaultMaxMarks]);
+
+  useEffect(() => {
+    if (!localStorage.getItem('markflow-draft-weightage')) {
+      setWeightage(String(defaultWeightage));
+    }
+  }, [defaultWeightage]);
 
   // Undo States
   const [deletingSessionId, setDeletingSessionId] = useState(null);
@@ -48,9 +71,8 @@ export default function CAWeightagePage({
   const [assessments, setAssessments] = useState(() => {
     const saved = localStorage.getItem('markflow-draft-assessments');
     return saved ? JSON.parse(saved) : [
-      { name: 'CA1', obtainedMarks: '', totalMarks: 30 },
-      { name: 'CA2', obtainedMarks: '', totalMarks: 30 },
-      { name: 'CA3', obtainedMarks: '', totalMarks: 30 }
+      { name: 'CA1', obtainedMarks: '', totalMarks: defaultMaxMarks },
+      { name: 'CA2', obtainedMarks: '', totalMarks: defaultMaxMarks }
     ];
   });
 
@@ -100,19 +122,24 @@ export default function CAWeightagePage({
     }
   }, [caCount, totalMarksPerCA, weightage, selectionLogic, assessments, autoSaveEnabled]);
 
+  // Re-build assessments list ONLY when caCount or global totalMarksPerCA changes
   useEffect(() => {
-    const updated = [];
-    for (let i = 1; i <= caCount; i++) {
-      const existing = assessments[i - 1];
-      updated.push({
-        name: `CA${i}`,
-        obtainedMarks: existing ? existing.obtainedMarks : '',
-        totalMarks: totalMarksPerCA === '' ? '' : totalMarksPerCA
-      });
-    }
-    setAssessments(updated);
+    setAssessments(prev => {
+      const updated = [];
+      for (let i = 1; i <= caCount; i++) {
+        const existing = prev[i - 1];
+        updated.push({
+          name: `CA${i}`,
+          obtainedMarks: existing ? existing.obtainedMarks : '',
+          totalMarks: totalMarksPerCA === '' ? '' : totalMarksPerCA
+        });
+      }
+      return updated;
+    });
+  }, [caCount, totalMarksPerCA]);
 
-    // Constrain selectionLogic based on new caCount
+  // Constrain selectionLogic based on new caCount
+  useEffect(() => {
     if (caCount < 3 && selectionLogic === 'best_2_3') {
       setSelectionLogic('all');
     }
@@ -122,7 +149,7 @@ export default function CAWeightagePage({
 
     if (customBestOfY > caCount) setCustomBestOfY(caCount);
     if (customBestOfX > caCount) setCustomBestOfX(Math.min(customBestOfX, caCount));
-  }, [caCount, totalMarksPerCA, selectionLogic]);
+  }, [caCount]);
 
   // Clean timers on unmount
   useEffect(() => {
@@ -190,17 +217,33 @@ export default function CAWeightagePage({
       const tot = parseFloat(ass.totalMarks);
       
       if (ass.obtainedMarks === '') {
-        newErrors[`obt-${index}`] = 'Required';
-        hasValidationError = true;
+        if (warningsEnabled) {
+          newErrors[`obt-${index}`] = 'Required';
+          hasValidationError = true;
+        } else {
+          delete newErrors[`obt-${index}`];
+        }
       } else if (isNaN(obt)) {
-        newErrors[`obt-${index}`] = 'Invalid Number';
-        hasValidationError = true;
+        if (warningsEnabled) {
+          newErrors[`obt-${index}`] = 'Invalid Number';
+          hasValidationError = true;
+        } else {
+          delete newErrors[`obt-${index}`];
+        }
       } else if (obt < 0) {
-        newErrors[`obt-${index}`] = 'Cannot be negative';
-        hasValidationError = true;
+        if (warningsEnabled) {
+          newErrors[`obt-${index}`] = 'Cannot be negative';
+          hasValidationError = true;
+        } else {
+          delete newErrors[`obt-${index}`];
+        }
       } else if (obt > tot) {
-        newErrors[`obt-${index}`] = `Max marks is ${tot}`;
-        hasValidationError = true;
+        if (warningsEnabled) {
+          newErrors[`obt-${index}`] = `Max marks is ${tot}`;
+          hasValidationError = true;
+        } else {
+          delete newErrors[`obt-${index}`];
+        }
       } else {
         delete newErrors[`obt-${index}`];
       }
@@ -208,7 +251,7 @@ export default function CAWeightagePage({
 
     setErrors(newErrors);
 
-    if (hasValidationError) {
+    if (hasValidationError && warningsEnabled) {
       triggerAlert('Calculation Error', 'Please resolve all errors. Obtained marks cannot exceed total marks.', 'warning');
       return;
     }
@@ -218,7 +261,7 @@ export default function CAWeightagePage({
 
   const handleSaveAndClose = (e) => {
     e.preventDefault();
-    if (!subCode.trim()) {
+    if (!subCode.trim() && warningsEnabled) {
       triggerAlert('Required Field Missing', 'Subject Code is mandatory.', 'warning');
       return;
     }
@@ -226,7 +269,7 @@ export default function CAWeightagePage({
     if (onSaveCASession) {
       onSaveCASession({
         id: Date.now().toString(),
-        code: subCode.trim().toUpperCase(),
+        code: subCode.trim() ? subCode.trim().toUpperCase() : 'TEMP',
         name: subName.trim() || 'Untitled Session',
         caPercentage: results.percentage,
         caWeightedMarks: results.weightedMarks,
